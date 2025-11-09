@@ -1,0 +1,2 @@
+# Script to remove scroll-to-refresh from all pages
+# This will be done manually through Edit tool

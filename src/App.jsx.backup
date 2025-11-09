@@ -1,0 +1,70 @@
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Home from './pages/Home';
+import Metric1 from './pages/Metric1';
+import Metric2 from './pages/Metric2';
+import Metric3 from './pages/Metric3';
+import Earnings from './pages/Earnings';
+import More from './pages/More';
+import Layout from './components/layout/Layout';
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  const handleLogin = (credentials) => {
+    // TODO: Replace with actual authentication logic
+    // For now, accept any credentials
+    setUser({
+      username: credentials.username,
+      email: credentials.email,
+    });
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  return (
+    <Router>
+      <Routes>
+        {/* Public Route - Login */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <Login onLogin={handleLogin} />
+            )
+          }
+        />
+
+        {/* Protected Routes - Main App */}
+        <Route
+          path="/*"
+          element={
+            isAuthenticated ? (
+              <Layout onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        >
+          <Route path="home" element={<Home />} />
+          <Route path="metric1" element={<Metric1 />} />
+          <Route path="metric2" element={<Metric2 />} />
+          <Route path="metric3" element={<Metric3 />} />
+          <Route path="earnings" element={<Earnings />} />
+          <Route path="more" element={<More />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
