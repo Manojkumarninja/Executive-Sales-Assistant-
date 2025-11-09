@@ -3,7 +3,7 @@ import { FaBell } from 'react-icons/fa';
 import NewsModal from './NewsModal';
 import { trackNewsViewed } from '../../utils/analytics';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '${API_BASE_URL}';
 
 const FloatingNewsButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

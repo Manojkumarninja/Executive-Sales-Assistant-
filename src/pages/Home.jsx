@@ -18,6 +18,7 @@ import {
   trackGlobalRefresh
 } from '../utils/analytics';
 import { useDataCache } from '../contexts/DataCacheContext';
+import { API_BASE_URL } from '../config';
 
 const Home = () => {
   const { getCache, updateCache } = useDataCache();
@@ -70,7 +71,7 @@ const Home = () => {
         return;
       }
 
-      const endpoint = `http://localhost:5000/api/customers/nudge-zone/${user.employee_id}`;
+      const endpoint = `${API_BASE_URL}/customers/nudge-zone/${user.employee_id}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 
@@ -110,7 +111,7 @@ const Home = () => {
         return;
       }
 
-      const endpoint = `http://localhost:5000/api/customers/so-close/${user.employee_id}`;
+      const endpoint = `${API_BASE_URL}/customers/so-close/${user.employee_id}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 
@@ -163,8 +164,8 @@ const Home = () => {
       }
 
       const endpoint = targetType === 'daily'
-        ? `http://localhost:5000/api/targets/daily/${user.employee_id}`
-        : `http://localhost:5000/api/targets/weekly/${user.employee_id}`;
+        ? `${API_BASE_URL}/targets/daily/${user.employee_id}`
+        : `${API_BASE_URL}/targets/weekly/${user.employee_id}`;
 
       const response = await fetch(endpoint);
       const data = await response.json();
@@ -234,7 +235,7 @@ const Home = () => {
         return;
       }
 
-      const endpoint = `http://localhost:5000/api/leaderboard/${user.employee_id}?period=${rankingPeriod}&layer=${rankingType}`;
+      const endpoint = `${API_BASE_URL}/leaderboard/${user.employee_id}?period=${rankingPeriod}&layer=${rankingType}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 

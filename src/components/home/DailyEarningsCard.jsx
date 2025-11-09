@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } fro
 import AnimatedCounter from '../shared/AnimatedCounter';
 import { FaFire, FaSyncAlt } from 'react-icons/fa';
 import { useDataCache } from '../../contexts/DataCacheContext';
+import { API_BASE_URL } from '../../config';
 
 const DailyEarningsCard = forwardRef((_props, ref) => {
   const { getCache, updateCache } = useDataCache();
@@ -35,8 +36,8 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
 
       // Fetch daily and weekly incentives in parallel
       const [dailyResponse, weeklyResponse] = await Promise.all([
-        fetch(`http://localhost:5000/api/incentives/daily/${user.employee_id}`),
-        fetch(`http://localhost:5000/api/incentives/weekly/${user.employee_id}`)
+        fetch(`${API_BASE_URL}/incentives/daily/${user.employee_id}`),
+        fetch(`${API_BASE_URL}/incentives/weekly/${user.employee_id}`)
       ]);
 
       const dailyData = await dailyResponse.json();

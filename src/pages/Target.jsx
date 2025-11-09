@@ -6,6 +6,7 @@ import CustomDropdown from '../components/shared/CustomDropdown';
 import { FaChevronDown, FaUser, FaPhone } from 'react-icons/fa';
 import { trackPageView, trackTargetPageToggle, trackPullToRefresh } from '../utils/analytics';
 import { useDataCache } from '../contexts/DataCacheContext';
+import { API_BASE_URL } from '../config';
 
 const Target = () => {
   const { getCache, updateCache, getTargetCustomersCache, updateTargetCustomersCache } = useDataCache();
@@ -46,8 +47,8 @@ const Target = () => {
       }
 
       const endpoint = targetType === 'daily'
-        ? `http://localhost:5000/api/targets/daily/${user.employee_id}`
-        : `http://localhost:5000/api/targets/weekly/${user.employee_id}`;
+        ? `${API_BASE_URL}/targets/daily/${user.employee_id}`
+        : `${API_BASE_URL}/targets/weekly/${user.employee_id}`;
 
       const response = await fetch(endpoint);
       const data = await response.json();
@@ -113,7 +114,7 @@ const Target = () => {
         return;
       }
 
-      const endpoint = `http://localhost:5000/api/target-customers/${user.employee_id}?metric=${encodeURIComponent(metricName)}&period=${period}`;
+      const endpoint = `${API_BASE_URL}/target-customers/${user.employee_id}?metric=${encodeURIComponent(metricName)}&period=${period}`;
       const response = await fetch(endpoint);
       const data = await response.json();
 

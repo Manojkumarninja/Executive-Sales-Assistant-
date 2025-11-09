@@ -4,7 +4,7 @@
 
 import * as EventNames from '../constants/eventNames';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '${API_BASE_URL}';
 
 // Cache to prevent duplicate events within a short time window
 const eventCache = new Map();

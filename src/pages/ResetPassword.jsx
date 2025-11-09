@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaChartLine, FaLock, FaCheckCircle } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '${API_BASE_URL}';
 
 const ResetPassword = () => {
   const navigate = useNavigate();

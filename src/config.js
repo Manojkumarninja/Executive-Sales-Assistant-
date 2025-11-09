@@ -1,9 +1,9 @@
 // API Configuration
 // Automatically switches between development and production URLs
 
-// For production, you'll update this after deploying the backend to Render
-const PRODUCTION_API_URL = 'https://your-backend.onrender.com'; // Update this after backend deployment
-const DEVELOPMENT_API_URL = 'http://localhost:5000';
+// Production backend URL (Render) - includes /api prefix
+const PRODUCTION_API_URL = 'https://executive-sales-assistant.onrender.com/api';
+const DEVELOPMENT_API_URL = 'http://localhost:5000/api';
 
 // Determine if we're in production or development
 export const API_BASE_URL = import.meta.env.PROD

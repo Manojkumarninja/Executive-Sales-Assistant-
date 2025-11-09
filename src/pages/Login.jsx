@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaLock, FaIdCard } from 'react-icons/fa';
 import { trackLogin, trackSignup } from '../utils/analytics';
 import NinjacartLogo from '../components/shared/NinjacartLogo';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
