@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: sales-executive-backend
+    env: python
+    region: singapore  # or choose: oregon, frankfurt, singapore
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: cd server && gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000

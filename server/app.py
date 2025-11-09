@@ -10,9 +10,18 @@ from mysql.connector import Error
 import hashlib
 import datetime
 import secrets
+import os
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for React frontend
+
+# CORS configuration - Allow Vercel frontend and localhost
+ALLOWED_ORIGINS = [
+    'http://localhost:5173',  # Local development
+    'http://localhost:3000',  # Alternative local
+    'https://*.vercel.app',   # Vercel deployments
+    '*'  # Allow all origins (remove in production for security)
+]
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
 # Database configuration
 DB_CONFIG = {
@@ -1134,4 +1143,9 @@ if __name__ == '__main__':
         print("❌ Failed to connect to database\n")
 
     print("🚀 Starting Flask server...\n")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    # Get port from environment variable (Render sets this) or use 5000 for local dev
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
