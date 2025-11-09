@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaBell } from 'react-icons/fa';
 import NewsModal from './NewsModal';
 import { trackNewsViewed } from '../../utils/analytics';
-
-const API_BASE_URL = '${API_BASE_URL}';
+import { API_BASE_URL } from '../../config';
 
 const FloatingNewsButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

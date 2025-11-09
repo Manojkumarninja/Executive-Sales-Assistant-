@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChartLine, FaIdCard, FaArrowLeft } from 'react-icons/fa';
-
-const API_BASE_URL = '${API_BASE_URL}';
+import { API_BASE_URL } from '../config';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

@@ -3,8 +3,7 @@
  */
 
 import * as EventNames from '../constants/eventNames';
-
-const API_BASE_URL = '${API_BASE_URL}';
+import { API_BASE_URL } from '../config';
 
 // Cache to prevent duplicate events within a short time window
 const eventCache = new Map();

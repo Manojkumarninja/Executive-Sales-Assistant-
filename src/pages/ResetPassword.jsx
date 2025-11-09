@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaChartLine, FaLock, FaCheckCircle } from 'react-icons/fa';
-
-const API_BASE_URL = '${API_BASE_URL}';
+import { API_BASE_URL } from '../config';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
