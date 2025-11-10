@@ -62,28 +62,12 @@ src/constants/eventNames.js
   - `page`: "Home"
   - `timestamp`: ISO timestamp
 
-#### Target Page Viewed
-- **Event Name**: `Target Page Viewed`
-- **Constant**: `EVENT_TARGET_PAGE_VIEWED`
-- **Triggered**: When user navigates to target page
+#### Customers Page Viewed
+- **Event Name**: `Customers Page Viewed`
+- **Constant**: `EVENT_CUSTOMERS_PAGE_VIEWED`
+- **Triggered**: When user navigates to customers page (formerly Target page)
 - **Metadata**:
-  - `page`: "Target"
-  - `timestamp`: ISO timestamp
-
-#### Earnings Page Viewed
-- **Event Name**: `Earnings Page Viewed`
-- **Constant**: `EVENT_EARNINGS_PAGE_VIEWED`
-- **Triggered**: When user navigates to earnings page
-- **Metadata**:
-  - `page`: "Earnings"
-  - `timestamp`: ISO timestamp
-
-#### More Page Viewed
-- **Event Name**: `More Page Viewed`
-- **Constant**: `EVENT_MORE_PAGE_VIEWED`
-- **Triggered**: When user navigates to more page
-- **Metadata**:
-  - `page`: "More"
+  - `page`: "Customers"
   - `timestamp`: ISO timestamp
 
 ---
@@ -98,7 +82,26 @@ src/constants/eventNames.js
   - `customer_id`: Customer ID
   - `customer_name`: Customer name
   - `phone_number`: Customer phone number
-  - `source`: Source of customer card ("nudge-zone", "so-close", "nearby")
+  - `source`: Source of customer card ("nudge-zone", "so-close", "nearby", "target-page")
+  - `timestamp`: ISO timestamp
+
+#### Customer Detail Modal Viewed
+- **Event Name**: `Customer Detail Modal Viewed`
+- **Constant**: `EVENT_CUSTOMER_DETAIL_VIEWED`
+- **Triggered**: When user opens customer detail modal
+- **Metadata**:
+  - `customer_id`: Customer ID
+  - `customer_name`: Customer name
+  - `timestamp`: ISO timestamp
+
+#### Customer SKU Details Viewed
+- **Event Name**: `Customer SKU Details Viewed`
+- **Constant**: `EVENT_CUSTOMER_SKU_VIEWED`
+- **Triggered**: When user views SKU details for a customer
+- **Metadata**:
+  - `customer_id`: Customer ID
+  - `sku_id`: SKU ID
+  - `sku_name`: SKU name
   - `timestamp`: ISO timestamp
 
 ---
@@ -125,24 +128,33 @@ src/constants/eventNames.js
 
 ---
 
-### 5. Target Page - Toggle Events
+### 5. Customers Page - Toggle Events
 
-#### Target Page Toggle - Daily
-- **Event Name**: `Target Page Toggle - Daily`
-- **Constant**: `EVENT_TARGET_PAGE_TOGGLE_DAILY`
-- **Triggered**: When user switches to daily targets on target page
+#### Customers Page Toggle - Daily
+- **Event Name**: `Customers Page Toggle - Daily`
+- **Constant**: `EVENT_CUSTOMERS_PAGE_TOGGLE_DAILY`
+- **Triggered**: When user switches to daily targets on customers page
 - **Metadata**:
   - `target_type`: "daily"
-  - `page`: "Target"
+  - `page`: "Customers"
   - `timestamp`: ISO timestamp
 
-#### Target Page Toggle - Weekly
-- **Event Name**: `Target Page Toggle - Weekly`
-- **Constant**: `EVENT_TARGET_PAGE_TOGGLE_WEEKLY`
-- **Triggered**: When user switches to weekly targets on target page
+#### Customers Page Toggle - Weekly
+- **Event Name**: `Customers Page Toggle - Weekly`
+- **Constant**: `EVENT_CUSTOMERS_PAGE_TOGGLE_WEEKLY`
+- **Triggered**: When user switches to weekly targets on customers page
 - **Metadata**:
   - `target_type`: "weekly"
-  - `page`: "Target"
+  - `page`: "Customers"
+  - `timestamp`: ISO timestamp
+
+#### Customers Page Metric Selected
+- **Event Name**: `Customers Page Metric Selected`
+- **Constant**: `EVENT_CUSTOMERS_METRIC_SELECTED`
+- **Triggered**: When user selects a metric from the dropdown on customers page
+- **Metadata**:
+  - `metric_name`: Name of the selected metric (e.g., "AB", "Tonnage", "OC")
+  - `period`: Current period ("daily" or "weekly")
   - `timestamp`: ISO timestamp
 
 ---
@@ -249,6 +261,35 @@ These events track the complete leaderboard state (period + layer combination):
 
 ---
 
+### 9. News/Updates Events
+
+#### News Viewed
+- **Event Name**: `News Viewed`
+- **Constant**: `EVENT_NEWS_VIEWED`
+- **Triggered**: When user opens the notifications/news modal
+- **Metadata**:
+  - `timestamp`: ISO timestamp
+
+#### News Item Read
+- **Event Name**: `News Item Read`
+- **Constant**: `EVENT_NEWS_ITEM_READ`
+- **Triggered**: When user clicks/reads a specific news item
+- **Metadata**:
+  - `news_title`: Title of the news item
+  - `news_type`: Type of news
+  - `timestamp`: ISO timestamp
+
+---
+
+## Deprecated Events
+
+The following events are no longer tracked as these pages have been disabled:
+
+- ~~**Earnings Page Viewed**~~ - Page disabled
+- ~~**More Page Viewed**~~ - Page disabled
+
+---
+
 ## Duplicate Event Prevention
 
 The analytics system includes built-in duplicate event prevention:
@@ -265,13 +306,19 @@ Events with the same `employee_id`, `event_name`, and `metadata` within 2 second
 
 ### Import Events
 ```javascript
-import { trackPageView, trackCustomerCall, trackHomeTargetsToggle } from '../utils/analytics';
+import {
+  trackPageView,
+  trackCustomerCall,
+  trackHomeTargetsToggle,
+  trackCustomerDetailViewed,
+  trackCustomersMetricSelected
+} from '../utils/analytics';
 ```
 
 ### Track Page View
 ```javascript
 useEffect(() => {
-  trackPageView('Home');
+  trackPageView('Customers');
 }, []);
 ```
 
@@ -282,9 +329,29 @@ const handleCallClick = (customer) => {
     customerId: customer.customerId,
     customerName: customer.customerName,
     phoneNumber: customer.phoneNumber,
-    source: 'nudge-zone'
+    source: 'target-page'
   });
 };
+```
+
+### Track Customer Detail Viewed
+```javascript
+const handleCustomerClick = (customer) => {
+  setSelectedCustomer(customer);
+  setIsModalOpen(true);
+  trackCustomerDetailViewed(customer.customerId, customer.customerName);
+};
+```
+
+### Track Metric Selection
+```javascript
+<CustomDropdown
+  value={selectedMetric}
+  onChange={(value) => {
+    setSelectedMetric(value);
+    trackCustomersMetricSelected(value, targetType);
+  }}
+/>
 ```
 
 ### Track Toggle Events
@@ -292,7 +359,7 @@ const handleCallClick = (customer) => {
 const toggleTargetType = () => {
   setTargetType(prev => {
     const newType = prev === 'daily' ? 'weekly' : 'daily';
-    trackHomeTargetsToggle(newType);
+    trackCustomersPageToggle(newType);
     return newType;
   });
 };
@@ -314,7 +381,11 @@ const toggleRankingPeriod = () => {
 
 ## Analytics API Endpoint
 
+### Development
 **URL**: `http://localhost:5000/api/events/log`
+
+### Production
+**URL**: `https://executive-sales-assistant.onrender.com/api/events/log`
 
 **Method**: POST
 
@@ -337,20 +408,111 @@ const toggleRankingPeriod = () => {
 
 ---
 
+## Event Tracking Implementation
+
+### Core Files
+
+1. **Event Constants**: `src/constants/eventNames.js`
+   - Centralized event name definitions
+   - Exported constants for type safety
+
+2. **Analytics Utilities**: `src/utils/analytics.js`
+   - `logEvent()` - Core logging function
+   - Tracking helper functions for each event type
+   - Duplicate prevention logic
+
+3. **API Configuration**: `src/config.js`
+   - Environment-based API URL switching
+   - Auto-detects development vs production
+
+### Flow
+
+1. User performs action (click, navigation, etc.)
+2. Component calls tracking function (e.g., `trackPageView('Home')`)
+3. Tracking function calls `logEvent()` with event name and metadata
+4. `logEvent()` checks for duplicates using event cache
+5. If not duplicate, sends POST request to backend `/api/events/log`
+6. Backend stores event in `SA_AppEvents` table
+7. Console logs success/skip message
+
+---
+
 ## Future Event Additions
 
 To add a new event:
 
-1. Add event name constant to `src/constants/eventNames.js`
-2. Create tracking function in `src/utils/analytics.js`
-3. Call tracking function at the appropriate location in the component
-4. Update this documentation file
+1. **Add event constant** to `src/constants/eventNames.js`:
+   ```javascript
+   export const EVENT_NEW_FEATURE = 'New Feature Used';
+   ```
+
+2. **Create tracking function** in `src/utils/analytics.js`:
+   ```javascript
+   export const trackNewFeature = (featureData) => {
+     return logEvent(EventNames.EVENT_NEW_FEATURE, {
+       feature_id: featureData.id,
+       feature_name: featureData.name,
+       timestamp: new Date().toISOString()
+     });
+   };
+   ```
+
+3. **Call tracking function** in component:
+   ```javascript
+   import { trackNewFeature } from '../utils/analytics';
+
+   const handleFeatureUse = () => {
+     trackNewFeature({ id: 1, name: 'Feature A' });
+   };
+   ```
+
+4. **Update this documentation** with the new event details
 
 ---
 
 ## Console Logging
 
-All events log to the browser console:
-- ✅ Success: `Event logged: [event name]`
-- ⏭️ Skipped: `Skipping duplicate event: [event name]`
-- ⚠️ Warning: `Cannot log event: No employee ID found`
+All events log to the browser console for debugging:
+- ✅ **Success**: `Event logged: [event name]`
+- ⏭️ **Skipped**: `Skipping duplicate event: [event name]`
+- ⚠️ **Warning**: `Cannot log event: No employee ID found`
+- ❌ **Error**: `Error logging event: [error message]`
+
+---
+
+## Analytics Dashboard (Future)
+
+Potential analytics queries for reporting dashboard:
+
+### Most Active Users
+```sql
+SELECT employee_id, COUNT(*) as event_count
+FROM SA_AppEvents
+WHERE entry_date >= CURDATE() - INTERVAL 7 DAY
+GROUP BY employee_id
+ORDER BY event_count DESC
+LIMIT 10;
+```
+
+### Popular Features
+```sql
+SELECT event_name, COUNT(*) as usage_count
+FROM SA_AppEvents
+WHERE entry_date >= CURDATE() - INTERVAL 30 DAY
+GROUP BY event_name
+ORDER BY usage_count DESC;
+```
+
+### Customer Engagement
+```sql
+SELECT event_name, COUNT(*) as call_count
+FROM SA_AppEvents
+WHERE event_name = 'Called Customer'
+  AND entry_date >= CURDATE() - INTERVAL 7 DAY
+GROUP BY event_name;
+```
+
+---
+
+**Last Updated**: 2025-11-10
+**Version**: 2.0 (Post Customers Page Rename)

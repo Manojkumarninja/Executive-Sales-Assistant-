@@ -1,68 +1,134 @@
 # Sales Executive Web App
 
-A gamified, professional web application for sales executives to track their performance, targets, and earnings.
+A gamified, professional web application for sales executives to track their performance, targets, and engage with customers.
+
+## Live Demo
+
+- **Frontend**: Deployed on Vercel (auto-deploys from main branch)
+- **Backend**: https://executive-sales-assistant.onrender.com
+- **Database**: MySQL (Remote server)
 
 ## Features
 
-- **Authentication**: Secure login page with username, email, and password
-- **Dashboard (Home)**:
-  - Daily earnings tracker with "Last Mile for Today" and "Today's Victory"
-  - Three target cards (AB, Tonnage, OC) with progress tracking
-  - Rankings leaderboard with City/Cluster toggle
-- **Metrics Pages**: Track Customer Acquisition, Product Mix, and Market Coverage
-- **Earnings Dashboard**: View detailed earnings breakdown and trends
-- **More Options**: Access to profile, settings, and additional features
-- **Responsive Design**: Mobile-first approach with bottom navigation on mobile
-- **Gamified UI**: Animated counters, progress bars, and motivational elements
+### Authentication
+- Secure login with username/email and password
+- Password reset functionality with OTP verification
+- 6-hour session timeout for security
+- Persistent authentication state
+
+### Dashboard (Home)
+- **Daily Earnings Tracker**:
+  - "Final Push Today" - Remaining daily target
+  - "Remaining for the Week" - Weekly target progress
+  - Live countdown timer showing time left in the day
+- **Target Cards**: Three clickable cards (AB, Tonnage, OC) with progress tracking
+- **Rankings Leaderboard**: City/Cluster toggle with day/week period selection
+- **Customer Engagement Cards**:
+  - 💬 **Nudge Zone**: All customers needing engagement with last order info
+  - 🔥 **So Close**: Customers who opened app but didn't order today
+  - 📍 **In and Around You**: Nearby customers sorted by proximity
+- **Global Refresh**: Manual refresh button with auto-refresh every 10 minutes
+- **Notification Bell**: Real-time notifications from backend
+
+### Customers Page
+- View target customers based on daily/weekly metrics
+- Filter by specific metrics (AB, Tonnage, OC, etc.)
+- Customer detail modal with:
+  - Contact information
+  - SKUs to pitch with product details
+  - Distance and last seen information
+  - One-click call functionality
+- Analytics tracking for all customer interactions
+
+### Analytics Tracking
+- Comprehensive event tracking system
+- Tracks page views, customer interactions, toggles, and more
+- Events stored in backend database
+- See [EVENT_TRACKING.md](EVENT_TRACKING.md) for complete event list
+
+### Responsive Design
+- **Desktop** (≥768px): Sidebar navigation with hover expand/collapse
+- **Mobile** (<768px): Bottom navigation bar
+- Smooth transitions and adaptive layouts
+
+### Gamified UI
+- Animated counters and progress bars
+- Motivational elements and status badges
+- Color-coded progress indicators
+- Visual feedback for user actions
 
 ## Tech Stack
 
-- **React 19** - UI framework
+### Frontend
+- **React 18.3.1** - UI framework
 - **Vite** - Build tool and dev server
 - **React Router v6** - Client-side routing
-- **Tailwind CSS** - Styling framework
-- **Framer Motion** - Animations (optional enhancement)
-- **React Icons** - Icon library
+- **Tailwind CSS** - Styling framework with custom purple theme
+- **React Icons** - Icon library (Font Awesome)
 - **React Circular Progressbar** - Progress visualizations
+- **Deployed on**: Vercel (auto-deploy from GitHub)
+
+### Backend
+- **Flask 3.0.0** - Python web framework
+- **Flask-CORS** - Cross-origin resource sharing
+- **MySQL** - Database (mysql-connector-python 8.2.0)
+- **Gunicorn 21.2.0** - Production WSGI server
+- **Deployed on**: Render (Singapore region)
+
+### Database
+- **MySQL** - Remote server at 116.202.114.156:3971
+- Database: `datalake`
+- Tables: executives, targets, incentives, orders, notifications, SA_AppNotification, etc.
 
 ## Installation
 
 ### Prerequisites
 - Node.js (v18 or higher)
+- Python 3.9 or higher
 - npm or yarn
 
-### Steps
+### Local Development Setup
 
-1. **Install Dependencies**
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/Manojkumarninja/Executive-Sales-Assistant-.git
+cd SalesExecutiveApp
+```
 
-   If you encounter permission errors with npm install, try one of these approaches:
+#### 2. Frontend Setup
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
 
-   ```bash
-   # Option 1: Use legacy peer deps
-   npm install --legacy-peer-deps
+# Start development server (runs on port 5173)
+npm run dev
 
-   # Option 2: Clean install
-   rm -rf node_modules package-lock.json
-   npm install
+# If you get silent failures, force dependency re-optimization:
+npx vite --force
+```
 
-   # Option 3: Run as administrator (Windows)
-   # Right-click Command Prompt -> Run as Administrator
-   npm install
-   ```
+#### 3. Backend Setup
+```bash
+# Navigate to server directory
+cd server
 
-2. **Start Development Server**
-   ```bash
-   npm run dev
-   ```
+# Install Python dependencies
+pip install -r requirements.txt
 
-3. **Open in Browser**
-   - Navigate to `http://localhost:5173`
-   - Login with any credentials (placeholder authentication)
+# Start Flask server (runs on port 5000)
+python app.py
+```
 
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
+**IMPORTANT**: Both frontend and backend must be running simultaneously for full functionality.
+
+### Production Build
+```bash
+# Build frontend for production
+npm run build
+
+# Preview production build
+npm run preview
+```
 
 ## Project Structure
 
@@ -71,93 +137,135 @@ SalesExecutiveApp/
 ├── src/
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Sidebar.jsx
-│   │   │   └── Layout.jsx
+│   │   │   ├── Sidebar.jsx              # Desktop sidebar & mobile bottom nav
+│   │   │   └── Layout.jsx               # Main layout wrapper
 │   │   ├── home/
-│   │   │   ├── DailyEarningsCard.jsx
-│   │   │   ├── TargetCard.jsx
-│   │   │   └── RankingsCard.jsx
+│   │   │   ├── DailyEarningsCard.jsx    # Daily/weekly targets with timer
+│   │   │   ├── TargetCard.jsx           # AB, Tonnage, OC cards
+│   │   │   ├── RankingsCard.jsx         # Leaderboard component
+│   │   │   └── CustomerListCard.jsx     # Nudge Zone, So Close, Nearby
 │   │   └── shared/
-│   │       ├── ProgressBar.jsx
-│   │       └── AnimatedCounter.jsx
+│   │       ├── ProgressBar.jsx          # Reusable progress bar
+│   │       ├── AnimatedCounter.jsx      # Number animations
+│   │       ├── PullToRefresh.jsx        # Pull-to-refresh component
+│   │       ├── FloatingNewsButton.jsx   # Notification bell
+│   │       ├── NewsModal.jsx            # Notifications modal
+│   │       ├── CustomDropdown.jsx       # Metric selector
+│   │       └── CustomerDetailModal.jsx  # Customer details & SKUs
 │   ├── pages/
-│   │   ├── Login.jsx
-│   │   ├── Home.jsx
-│   │   ├── Metric1.jsx
-│   │   ├── Metric2.jsx
-│   │   ├── Metric3.jsx
-│   │   ├── Earnings.jsx
-│   │   └── More.jsx
+│   │   ├── Login.jsx                    # Login page
+│   │   ├── ForgotPassword.jsx           # Password reset flow
+│   │   ├── ResetPassword.jsx            # Password reset confirmation
+│   │   ├── Home.jsx                     # Main dashboard
+│   │   └── Target.jsx                   # Customers page
+│   ├── contexts/
+│   │   └── DataCacheContext.jsx         # Client-side caching
 │   ├── hooks/
-│   │   └── usePlaceholderData.js
-│   ├── App.jsx
-│   └── main.jsx
-├── tailwind.config.js
-├── postcss.config.js
-└── package.json
+│   │   └── usePullToRefresh.js          # Pull-to-refresh hook
+│   ├── utils/
+│   │   └── analytics.js                 # Event tracking utilities
+│   ├── constants/
+│   │   └── eventNames.js                # Analytics event constants
+│   ├── config.js                        # API URL configuration
+│   ├── App.jsx                          # Main app component
+│   └── main.jsx                         # Entry point
+├── server/
+│   ├── app.py                           # Flask backend application
+│   └── requirements.txt                 # Python dependencies
+├── vercel.json                          # Vercel deployment config
+├── render.yaml                          # Render deployment config
+├── CLAUDE.md                            # Development guide for Claude Code
+├── EVENT_TRACKING.md                    # Analytics events documentation
+├── tailwind.config.js                   # Tailwind configuration
+└── package.json                         # Node dependencies
 ```
 
-## Placeholder Data & Database Integration
+## Configuration Files
 
-All data is currently using **placeholder hooks** located in `src/hooks/usePlaceholderData.js`.
+### Frontend Configuration
+- **src/config.js**: API URL management (auto-switches between dev/prod)
+- **vercel.json**: Vercel deployment settings
+- **tailwind.config.js**: Custom theme and color palette
 
-### To Integrate with Your Database:
+### Backend Configuration
+- **server/app.py**: Flask routes and database connections
+- **render.yaml**: Render deployment settings (Singapore region)
+- **server/requirements.txt**: Python dependencies
 
-1. **Daily Earnings** (`useDailyEarnings` hook)
-   - Replace placeholder with API call to fetch daily targets and achievements
-   - Example query location: Line 8-15 in `usePlaceholderData.js`
+## Database Schema
 
-2. **Targets** (`useTargets` hook)
-   - Replace with query for AB, Tonnage, and OC targets
-   - Example query location: Line 29-44 in `usePlaceholderData.js`
+### Key Tables
+- **executives**: Employee information and credentials
+- **targets**: Daily and weekly targets by metric
+- **incentives**: Earnings and incentive calculations
+- **orders**: Customer order history
+- **SA_AppNotification**: In-app notifications
+- **SA_AppEvents**: Analytics event tracking
 
-3. **Rankings** (`useRankings` hook)
-   - Replace with query for city and cluster rankings
-   - Example query location: Line 63-79 in `usePlaceholderData.js`
+## API Endpoints
 
-4. **Authentication** (`useAuth` hook)
-   - Replace with actual authentication API
-   - Example location: Line 86-113 in `usePlaceholderData.js`
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/forgot-password` - Request password reset OTP
+- `POST /api/auth/reset-password` - Reset password with OTP
 
-5. **Metrics Data** (`useMetricsData` hook)
-   - Replace with actual metrics queries
-   - Example location: Line 116-149 in `usePlaceholderData.js`
+### Executives
+- `GET /api/executives/<employee_id>` - Get executive details
 
-6. **Earnings Data** (`useEarningsData` hook)
-   - Replace with earnings breakdown queries
-   - Example location: Line 152-182 in `usePlaceholderData.js`
+### Targets
+- `GET /api/targets/daily/<employee_id>` - Get daily targets
+- `GET /api/targets/weekly/<employee_id>` - Get weekly targets
 
-### Example Database Integration:
+### Customers
+- `GET /api/target-customers/<employee_id>?metric=<metric>&period=<period>` - Get target customers
 
-```javascript
-// Before (Placeholder)
-export const useDailyEarnings = () => {
-  const [data, setData] = useState({
-    remainingTarget: 25000,
-    achievedToday: 18500,
-    // ... more placeholder data
-  });
-  return data;
-};
+### Incentives
+- `GET /api/incentives/daily/<employee_id>` - Get daily incentives
+- `GET /api/incentives/weekly/<employee_id>` - Get weekly incentives
 
-// After (Database Integration)
-export const useDailyEarnings = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+### Rankings
+- `GET /api/rankings/<employee_id>?period=<day|week>&layer=<city|cluster>` - Get leaderboard
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const response = await fetch('/api/daily-earnings');
-      const result = await response.json();
-      setData(result);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+### Customers Lists
+- `GET /api/nudge-zone-customers/<employee_id>` - Nudge zone customers
+- `GET /api/so-close-customers/<employee_id>` - So close customers
+- `GET /api/nearby-customers/<employee_id>` - Nearby customers
 
-  return { data, loading };
-};
-```
+### Notifications
+- `GET /api/notifications` - Get all notifications
+
+### Analytics
+- `POST /api/events/log` - Log analytics event
+
+## Analytics Event Tracking
+
+The app tracks comprehensive user interactions for analytics:
+
+### Page Views
+- Home Page Viewed
+- Customers Page Viewed
+
+### Customer Interactions
+- Called Customer (with source tracking)
+- Customer Detail Modal Viewed
+- Customer SKU Details Viewed
+- Customers Page Metric Selected
+
+### Toggle Events
+- Home Page Targets Toggle (Daily/Weekly)
+- Customers Page Toggle (Daily/Weekly)
+- Leaderboard Period Toggle (Day/Week)
+- Leaderboard Layer Toggle (City/Cluster)
+
+### Refresh Events
+- Global Refresh (Home page)
+- Pull to Refresh (per page)
+
+### News Events
+- News Viewed
+- News Item Read
+
+See [EVENT_TRACKING.md](EVENT_TRACKING.md) for complete documentation.
 
 ## Color Scheme
 
@@ -166,34 +274,85 @@ export const useDailyEarnings = () => {
 - **Warning Orange**: #F59E0B
 - **Danger Red**: #EF4444
 
-## Features to Add
+## Deployment
 
-- [ ] Connect to actual database
-- [ ] Implement real authentication (JWT, OAuth, etc.)
-- [ ] Add chart libraries (Chart.js, Recharts, etc.)
-- [ ] Add real-time data updates via WebSocket
-- [ ] Implement push notifications
-- [ ] Add PDF report generation
-- [ ] Add data export functionality (CSV, Excel)
-- [ ] Implement user profile management
-- [ ] Add dark mode toggle
-- [ ] Add multi-language support
+### Frontend (Vercel)
+1. Connected to GitHub repository
+2. Auto-deploys on push to main branch
+3. Build command: `npm run build`
+4. Output directory: `dist`
 
-## Demo Credentials
+### Backend (Render)
+1. Deployed as Web Service in Singapore region
+2. Build command: `pip install -r server/requirements.txt`
+3. Start command: `cd server && gunicorn app:app`
+4. Environment variables:
+   - `FLASK_ENV=production`
+   - `PORT=10000`
 
-Since authentication is currently placeholder-based, you can login with **any username, email, and password**.
+### Continuous Deployment
+Every push to the main branch automatically triggers:
+- Vercel rebuild and deployment (frontend)
+- The backend on Render stays running (no auto-deploy configured)
 
-## Notes
+## Key Features in Detail
 
-- All TODO comments in the code indicate where database queries should be integrated
-- The app is fully responsive and works on mobile, tablet, and desktop
-- Animations are built with CSS and custom React hooks
-- The sidebar auto-expands on hover (desktop) and uses bottom navigation on mobile
+### Session Management
+- 6-hour session timeout
+- Automatic logout after inactivity
+- Session expiry timestamp stored in localStorage
+
+### Caching System
+- Client-side data caching with DataCacheContext
+- Reduces API calls and improves performance
+- Cache keys for: targets, rankings, customers, incentives
+
+### Pull-to-Refresh
+- Available on all pages
+- Manual data refresh capability
+- Smooth animation feedback
+
+### Duplicate Event Prevention
+- 2-second window for duplicate event detection
+- Prevents multiple identical analytics events
+- Automatic cache cleanup
+
+## Known Issues & Solutions
+
+1. **Frontend fails silently (exit code 1)**
+   - Solution: Use `npx vite --force` to force dependency re-optimization
+
+2. **CORS errors in production**
+   - Solution: Backend CORS is configured for Vercel domains
+
+3. **Render free tier sleep**
+   - Backend on Render sleeps after 15 minutes of inactivity
+   - First request after sleep takes ~30 seconds to wake up
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test locally with both frontend and backend running
+5. Push to your fork and create a pull request
+
+## Development Notes
+
+- See [CLAUDE.md](CLAUDE.md) for detailed development instructions
+- All TODO comments in code indicate potential enhancements
+- Analytics events are centralized in `src/constants/eventNames.js`
+- API URLs automatically switch based on environment (dev/prod)
 
 ## Support
 
-For issues or questions, please refer to the inline code comments marked with `TODO:` tags.
+For issues or questions:
+- Check inline code comments marked with `TODO:`
+- Refer to [CLAUDE.md](CLAUDE.md) for development guidelines
+- Review [EVENT_TRACKING.md](EVENT_TRACKING.md) for analytics documentation
 
 ---
 
 **Built with ❤️ for Sales Excellence**
+
+**Deployed with Vercel + Render**
