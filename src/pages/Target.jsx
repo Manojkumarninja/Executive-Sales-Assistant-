@@ -4,7 +4,7 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import CustomerDetailModal from '../components/shared/CustomerDetailModal';
 import CustomDropdown from '../components/shared/CustomDropdown';
 import { FaChevronDown, FaUser, FaPhone } from 'react-icons/fa';
-import { trackPageView, trackTargetPageToggle, trackPullToRefresh } from '../utils/analytics';
+import { trackPageView, trackCustomersPageToggle, trackPullToRefresh, trackCustomerDetailViewed, trackCustomersMetricSelected } from '../utils/analytics';
 import { useDataCache } from '../contexts/DataCacheContext';
 import { API_BASE_URL } from '../config';
 
@@ -21,7 +21,7 @@ const Target = () => {
 
   // Track page view on mount
   useEffect(() => {
-    trackPageView('Target');
+    trackPageView('Customers');
   }, []);
 
   // Fetch targets based on targetType with caching
@@ -161,7 +161,7 @@ const Target = () => {
     setTargetType(prev => {
       const newType = prev === 'daily' ? 'weekly' : 'daily';
       // Track the toggle event
-      trackTargetPageToggle(newType);
+      trackCustomersPageToggle(newType);
       return newType;
     });
   };
@@ -169,6 +169,8 @@ const Target = () => {
   const handleCustomerClick = (customer) => {
     setSelectedCustomer(customer);
     setIsModalOpen(true);
+    // Track customer detail viewed
+    trackCustomerDetailViewed(customer.customerId, customer.customerName);
   };
 
   const handleCloseModal = () => {
@@ -224,7 +226,11 @@ const Target = () => {
                   label: target.name
                 }))}
                 value={selectedMetric}
-                onChange={(value) => setSelectedMetric(value)}
+                onChange={(value) => {
+                  setSelectedMetric(value);
+                  // Track metric selection
+                  trackCustomersMetricSelected(value, targetType);
+                }}
                 placeholder="Choose Metric"
               />
             </div>

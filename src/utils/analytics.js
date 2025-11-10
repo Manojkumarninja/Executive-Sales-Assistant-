@@ -133,9 +133,7 @@ export const trackLogout = (employeeId, role) => {
 export const trackPageView = (pageName) => {
   const eventNameMap = {
     'Home': EventNames.EVENT_HOME_PAGE_VIEWED,
-    'Target': EventNames.EVENT_TARGET_PAGE_VIEWED,
-    'Earnings': EventNames.EVENT_EARNINGS_PAGE_VIEWED,
-    'More': EventNames.EVENT_MORE_PAGE_VIEWED
+    'Customers': EventNames.EVENT_CUSTOMERS_PAGE_VIEWED
   };
 
   const eventName = eventNameMap[pageName] || `${pageName} Page Viewed`;
@@ -175,16 +173,50 @@ export const trackHomeTargetsToggle = (targetType) => {
 };
 
 /**
- * Target Page - Target Toggle Event Tracking
+ * Customers Page - Period Toggle Event Tracking
  */
-export const trackTargetPageToggle = (targetType) => {
+export const trackCustomersPageToggle = (targetType) => {
   const eventName = targetType === 'daily'
-    ? EventNames.EVENT_TARGET_PAGE_TOGGLE_DAILY
-    : EventNames.EVENT_TARGET_PAGE_TOGGLE_WEEKLY;
+    ? EventNames.EVENT_CUSTOMERS_PAGE_TOGGLE_DAILY
+    : EventNames.EVENT_CUSTOMERS_PAGE_TOGGLE_WEEKLY;
 
   return logEvent(eventName, {
     target_type: targetType,
-    page: 'Target',
+    page: 'Customers',
+    timestamp: new Date().toISOString()
+  });
+};
+
+/**
+ * Customer Detail Modal Event Tracking
+ */
+export const trackCustomerDetailViewed = (customerId, customerName) => {
+  return logEvent(EventNames.EVENT_CUSTOMER_DETAIL_VIEWED, {
+    customer_id: customerId,
+    customer_name: customerName,
+    timestamp: new Date().toISOString()
+  });
+};
+
+/**
+ * Customer SKU Viewed Event Tracking
+ */
+export const trackCustomerSkuViewed = (customerId, skuId, skuName) => {
+  return logEvent(EventNames.EVENT_CUSTOMER_SKU_VIEWED, {
+    customer_id: customerId,
+    sku_id: skuId,
+    sku_name: skuName,
+    timestamp: new Date().toISOString()
+  });
+};
+
+/**
+ * Customers Page Metric Selection Event Tracking
+ */
+export const trackCustomersMetricSelected = (metricName, period) => {
+  return logEvent(EventNames.EVENT_CUSTOMERS_METRIC_SELECTED, {
+    metric_name: metricName,
+    period: period,
     timestamp: new Date().toISOString()
   });
 };
