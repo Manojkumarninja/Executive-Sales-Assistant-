@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaLock, FaIdCard } from 'react-icons/fa';
 import { trackLogin, trackSignup } from '../utils/analytics';
 import NinjacartLogo from '../components/shared/NinjacartLogo';
+import ServerWakeupLoader from '../components/shared/ServerWakeupLoader';
 import { API_BASE_URL } from '../config';
 
 const Login = ({ onLogin }) => {
@@ -191,12 +192,16 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-bg p-4">
-      {/* Animated background circles */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-      </div>
+    <>
+      {/* Server Wakeup Loader */}
+      <ServerWakeupLoader isLoading={isLoading} />
+
+      <div className="min-h-screen flex items-center justify-center gradient-bg p-4">
+        {/* Animated background circles */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+        </div>
 
       {/* Login/Signup Card */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 md:p-10 animate-fade-in">
@@ -453,6 +458,7 @@ const Login = ({ onLogin }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
