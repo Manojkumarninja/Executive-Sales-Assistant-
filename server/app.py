@@ -6,7 +6,7 @@ Connects to MySQL database and handles authentication
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import pooling, Error
 import hashlib
 import datetime
 import secrets
@@ -23,7 +23,7 @@ ALLOWED_ORIGINS = [
 ]
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
-# Database configuration
+# Database configuration with connection pooling
 DB_CONFIG = {
     'host': '116.202.114.156',
     'port': 3971,
@@ -32,11 +32,30 @@ DB_CONFIG = {
     'database': 'datalake'
 }
 
+# Create connection pool for better performance
+# Pool reuses connections instead of creating new ones for each request
+try:
+    connection_pool = pooling.MySQLConnectionPool(
+        pool_name="sales_app_pool",
+        pool_size=5,  # 5 connections in the pool
+        pool_reset_session=True,
+        **DB_CONFIG
+    )
+    print("✅ Database connection pool created successfully")
+except Error as e:
+    print(f"❌ Error creating connection pool: {e}")
+    connection_pool = None
+
 def get_db_connection():
-    """Create database connection"""
+    """Get database connection from pool"""
     try:
-        connection = mysql.connector.connect(**DB_CONFIG)
-        return connection
+        if connection_pool:
+            connection = connection_pool.get_connection()
+            return connection
+        else:
+            # Fallback to direct connection if pool fails
+            connection = mysql.connector.connect(**DB_CONFIG)
+            return connection
     except Error as e:
         print(f"❌ Database connection error: {e}")
         return None
@@ -65,6 +84,18 @@ def health_check():
             'success': False,
             'message': 'Database connection failed'
         }), 500
+
+@app.route('/api/keep-alive', methods=['GET'])
+def keep_alive():
+    """Keep-alive endpoint to prevent Render from sleeping
+    Can be pinged by external cron job services (cron-job.org, etc.)
+    Lightweight endpoint that doesn't hit database"""
+    return jsonify({
+        'success': True,
+        'status': 'alive',
+        'timestamp': datetime.datetime.now().isoformat(),
+        'message': 'Server is awake and ready'
+    })
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
