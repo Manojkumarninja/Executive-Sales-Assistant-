@@ -43,11 +43,11 @@ const CustomerDetailModal = ({ isOpen, onClose, customer }) => {
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden animate-fade-in"
+          className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col animate-fade-in"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white relative">
+          <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white relative flex-shrink-0">
             <button
               onClick={onClose}
               className="absolute top-4 right-4 p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-all"
@@ -75,7 +75,7 @@ const CustomerDetailModal = ({ isOpen, onClose, customer }) => {
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+          <div className="p-6 overflow-y-auto flex-1">
             {/* Customer Details */}
             {(customer.distance || customer.lastSeen) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -169,7 +169,7 @@ const CustomerDetailModal = ({ isOpen, onClose, customer }) => {
           </div>
 
           {/* Footer */}
-          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center flex-shrink-0">
             <button
               onClick={onClose}
               className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all"

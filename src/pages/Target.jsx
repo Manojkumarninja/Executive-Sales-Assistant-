@@ -655,7 +655,7 @@ const Target = () => {
                         </div>
                       </div>
 
-                      {/* View Details Button */}
+                      {/* View SKU Details Button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -780,6 +780,7 @@ const Target = () => {
                             )}
                           </div>
                         </div>
+                        {/* View Details Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

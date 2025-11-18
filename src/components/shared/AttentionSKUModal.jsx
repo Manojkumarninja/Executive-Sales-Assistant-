@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaTimes, FaBox, FaCheck, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTimes, FaBox, FaCheck, FaClock, FaExclamationTriangle, FaPhone } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
 
 const AttentionSKUModal = ({ isOpen, onClose, customer, metric }) => {
@@ -45,9 +45,9 @@ const AttentionSKUModal = ({ isOpen, onClose, customer, metric }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-6 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-6 flex justify-between items-center flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold flex items-center">
               <FaBox className="mr-3" />
@@ -64,7 +64,7 @@ const AttentionSKUModal = ({ isOpen, onClose, customer, metric }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="p-6 overflow-y-auto flex-1">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -184,13 +184,20 @@ const AttentionSKUModal = ({ isOpen, onClose, customer, metric }) => {
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 p-4 flex justify-end border-t border-gray-200">
+        <div className="bg-gray-50 p-4 flex justify-between items-center border-t border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all"
           >
             Close
           </button>
+          <a
+            href={`tel:${customer.phoneNumber}`}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
+          >
+            <FaPhone />
+            <span>Call Customer</span>
+          </a>
         </div>
       </div>
     </div>

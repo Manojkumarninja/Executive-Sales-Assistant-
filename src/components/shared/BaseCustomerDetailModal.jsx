@@ -5,9 +5,9 @@ const BaseCustomerDetailModal = ({ isOpen, onClose, customer }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6 flex justify-between items-center flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold flex items-center">
               <FaUser className="mr-3" />
@@ -24,7 +24,7 @@ const BaseCustomerDetailModal = ({ isOpen, onClose, customer }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="p-6 overflow-y-auto flex-1">
           {/* Contact Information */}
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
@@ -138,13 +138,20 @@ const BaseCustomerDetailModal = ({ isOpen, onClose, customer }) => {
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 p-4 flex justify-end border-t border-gray-200">
+        <div className="bg-gray-50 p-4 flex justify-between items-center border-t border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all"
           >
             Close
           </button>
+          <a
+            href={`tel:${customer.phoneNumber}`}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
+          >
+            <FaPhone />
+            <span>Call Customer</span>
+          </a>
         </div>
       </div>
     </div>
