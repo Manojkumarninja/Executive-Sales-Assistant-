@@ -86,6 +86,10 @@ const Login = ({ onLogin }) => {
     setApiError('');
 
     try {
+      // Create AbortController for timeout (3 minutes for server wake-up)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
+
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -95,7 +99,10 @@ const Login = ({ onLogin }) => {
           employee_id: formData.employee_id,
           password: formData.password,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -115,7 +122,15 @@ const Login = ({ onLogin }) => {
 
     } catch (error) {
       console.error('Login error:', error);
-      setApiError(error.message || 'Failed to login. Please check your credentials.');
+
+      // Better error messages for different scenarios
+      if (error.name === 'AbortError') {
+        setApiError('Server is taking longer than expected to wake up. Please try again or contact support.');
+      } else if (error.message === 'Failed to fetch') {
+        setApiError('Server is waking up (this may take 1-2 minutes on first access). Please wait and try again.');
+      } else {
+        setApiError(error.message || 'Failed to login. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +150,10 @@ const Login = ({ onLogin }) => {
     setSuccessMessage('');
 
     try {
+      // Create AbortController for timeout (3 minutes for server wake-up)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
+
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
@@ -146,7 +165,10 @@ const Login = ({ onLogin }) => {
           full_name: formData.full_name || 'Sales Executive', // Fallback
           email: formData.email || 'executive@company.com', // Fallback
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -171,7 +193,15 @@ const Login = ({ onLogin }) => {
 
     } catch (error) {
       console.error('Signup error:', error);
-      setApiError(error.message || 'Failed to signup. Please try again.');
+
+      // Better error messages for different scenarios
+      if (error.name === 'AbortError') {
+        setApiError('Server is taking longer than expected to wake up. Please try again or contact support.');
+      } else if (error.message === 'Failed to fetch') {
+        setApiError('Server is waking up (this may take 1-2 minutes on first access). Please wait and try again.');
+      } else {
+        setApiError(error.message || 'Failed to signup. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
