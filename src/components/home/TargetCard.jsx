@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import AnimatedCounter from '../shared/AnimatedCounter';
-import ProgressBar from '../shared/ProgressBar';
 import { FaArrowUp, FaCheckCircle, FaExclamationTriangle, FaCoins } from 'react-icons/fa';
 
 const TargetCard = ({ target }) => {
@@ -17,12 +17,18 @@ const TargetCard = ({ target }) => {
     incentive_pending
   } = target;
 
+  // State for active slab marker
+  const [activeSlab, setActiveSlab] = useState(null);
+
   // Calculate slab percentages relative to max target for progress bar markers
-  const slabPercentages = targetValue > 0 ? {
-    slab1: (slab1_target / targetValue) * 100,
-    slab2: (slab2_target / targetValue) * 100,
-    slab3: (slab3_target / targetValue) * 100
-  } : null;
+  const slab1Percent = targetValue > 0 ? (slab1_target / targetValue) * 100 : 0;
+  const slab2Percent = targetValue > 0 ? (slab2_target / targetValue) * 100 : 0;
+  const slab3Percent = targetValue > 0 ? (slab3_target / targetValue) * 100 : 0;
+
+  // Toggle slab tooltip on tap/click
+  const toggleSlab = (slabNumber) => {
+    setActiveSlab(prev => prev === slabNumber ? null : slabNumber);
+  };
 
   const getStatusIcon = () => {
     if (percentage >= 80) return <FaCheckCircle className="text-success" />;
@@ -76,13 +82,71 @@ const TargetCard = ({ target }) => {
         </div>
       </div>
 
-      {/* Progress Bar with Slab Markers */}
-      <ProgressBar
-        percentage={percentage}
-        height="8px"
-        animated={true}
-        slabs={slabPercentages}
-      />
+      {/* Progress Bar with Interactive Slab Markers */}
+      <div className="relative px-1">
+        {/* Progress Bar Container */}
+        <div className="relative h-4 bg-gray-200 rounded-full overflow-visible">
+          {/* Achieved Progress Bar */}
+          <div
+            className={`absolute left-0 top-0 h-full bg-gradient-to-r ${getStatusColor() === 'from-success to-green-600' ? 'from-success to-green-600' : getStatusColor() === 'from-warning to-orange-600' ? 'from-warning to-orange-600' : 'from-danger to-red-600'} rounded-full transition-all duration-500`}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          ></div>
+
+          {/* Slab 1 Marker - Show if exists and not at 0% or 100% */}
+          {slab1Percent > 0 && slab1Percent < 100 && (
+            <div
+              className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+              style={{ left: `${slab1Percent}%` }}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSlab(1);
+              }}
+            >
+              <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
+              <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 1 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div>Slab 1</div>
+                <div>{unit === '₹' ? '₹' : ''}{Math.round(slab1_target).toLocaleString()}{unit !== '₹' ? ' ' + unit : ''}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Slab 2 Marker - Show if exists and not at 0% or 100% */}
+          {slab2Percent > 0 && slab2Percent < 100 && (
+            <div
+              className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+              style={{ left: `${slab2Percent}%` }}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSlab(2);
+              }}
+            >
+              <div className="w-5 h-5 bg-yellow-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
+              <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 2 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div>Slab 2</div>
+                <div>{unit === '₹' ? '₹' : ''}{Math.round(slab2_target).toLocaleString()}{unit !== '₹' ? ' ' + unit : ''}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Slab 3 (Target) Marker - Always show at 100% if exists */}
+          {slab3_target > 0 && (
+            <div
+              className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+              style={{ left: '100%' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSlab(3);
+              }}
+            >
+              <div className="w-5 h-5 bg-purple-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
+              <div className={`absolute top-8 right-0 transform bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div>Slab 3 (Target)</div>
+                <div>{unit === '₹' ? '₹' : ''}{Math.round(slab3_target).toLocaleString()}{unit !== '₹' ? ' ' + unit : ''}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Footer Stats */}
       <div className="flex items-center justify-between mt-3">

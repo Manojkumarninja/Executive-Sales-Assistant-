@@ -41,9 +41,9 @@ try:
         pool_reset_session=True,
         **DB_CONFIG
     )
-    print("✅ Database connection pool created successfully")
+    print("[OK] Database connection pool created successfully")
 except Error as e:
-    print(f"❌ Error creating connection pool: {e}")
+    print(f"[ERROR] Error creating connection pool: {e}")
     connection_pool = None
 
 def get_db_connection():
@@ -57,7 +57,7 @@ def get_db_connection():
             connection = mysql.connector.connect(**DB_CONFIG)
             return connection
     except Error as e:
-        print(f"❌ Database connection error: {e}")
+        print(f"[ERROR] Database connection error: {e}")
         return None
 
 def hash_password(password):
@@ -104,7 +104,7 @@ def signup():
     employee_id = data.get('employee_id', '').strip()
     password = data.get('password', '')
 
-    print(f"\n📝 Signup request for: {employee_id}")
+    print(f"\n[INFO] Signup request for: {employee_id}")
 
     # Validate inputs
     if not employee_id or not password:
@@ -130,7 +130,7 @@ def signup():
         cursor = connection.cursor(dictionary=True)
 
         # Step 1: Check if employee exists in Executive table with correct role
-        print("🔍 Checking Executive table...")
+        print("[CHECK] Checking Executive table...")
         cursor.execute(
             "SELECT employee_id, Name, email, role FROM Executive WHERE employee_id = %s AND role = %s",
             (employee_id, 'BUSINESS_DEVELOPMENT_EXECUTIVE')
@@ -138,16 +138,16 @@ def signup():
         executive = cursor.fetchone()
 
         if not executive:
-            print(f"❌ Employee {employee_id} not found or not authorized")
+            print(f"[ERROR] Employee {employee_id} not found or not authorized")
             return jsonify({
                 'success': False,
                 'message': 'Employee ID not found or not authorized. Only Business Development Executives can register.'
             }), 403
 
-        print(f"✅ Employee found: {executive['Name']} - {executive['role']}")
+        print(f"[OK] Employee found: {executive['Name']} - {executive['role']}")
 
         # Step 2: Check if already registered
-        print("🔍 Checking if already registered...")
+        print("[CHECK] Checking if already registered...")
         cursor.execute(
             "SELECT employee_id FROM SalesExecutiveApp_Login WHERE employee_id = %s",
             (employee_id,)
@@ -155,7 +155,7 @@ def signup():
         existing = cursor.fetchone()
 
         if existing:
-            print(f"❌ Employee {employee_id} already registered")
+            print(f"[ERROR] Employee {employee_id} already registered")
             return jsonify({
                 'success': False,
                 'message': 'User already registered. Please login.'
@@ -174,7 +174,7 @@ def signup():
         )
         connection.commit()
 
-        print(f"✅ User {employee_id} registered successfully in database!")
+        print(f"[OK] User {employee_id} registered successfully in database!")
 
         # Generate token
         token = f"token-{employee_id}-{secrets.token_hex(16)}"
@@ -192,7 +192,7 @@ def signup():
         }), 201
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({
             'success': False,
             'message': 'Database error during signup',
@@ -230,7 +230,7 @@ def login():
         cursor = connection.cursor(dictionary=True)
 
         # Get user from database
-        print("🔍 Fetching user from SalesExecutiveApp_Login...")
+        print("[CHECK] Fetching user from SalesExecutiveApp_Login...")
         cursor.execute(
             "SELECT employee_id, password_hash, full_name, email, role FROM SalesExecutiveApp_Login WHERE employee_id = %s",
             (employee_id,)
@@ -238,7 +238,7 @@ def login():
         user = cursor.fetchone()
 
         if not user:
-            print(f"❌ User {employee_id} not found")
+            print(f"[ERROR] User {employee_id} not found")
             return jsonify({
                 'success': False,
                 'message': 'Invalid employee ID or password'
@@ -247,21 +247,21 @@ def login():
         # Verify password
         print("🔐 Verifying password...")
         if not verify_password(password, user['password_hash']):
-            print("❌ Invalid password")
+            print("[ERROR] Invalid password")
             return jsonify({
                 'success': False,
                 'message': 'Invalid employee ID or password'
             }), 401
 
         # Update last login
-        print("📝 Updating last login...")
+        print("[INFO] Updating last login...")
         cursor.execute(
             "UPDATE SalesExecutiveApp_Login SET last_login = NOW() WHERE employee_id = %s",
             (employee_id,)
         )
         connection.commit()
 
-        print(f"✅ Login successful for {employee_id}")
+        print(f"[OK] Login successful for {employee_id}")
 
         # Generate token
         token = f"token-{employee_id}-{secrets.token_hex(16)}"
@@ -280,7 +280,7 @@ def login():
         }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({
             'success': False,
             'message': 'Database error during login',
@@ -321,7 +321,7 @@ def get_daily_incentives(employee_id):
     try:
         cursor = connection.cursor(dictionary=True)
 
-        # Day Incentive Achievement query with slab calculations
+        # Final Daily Overall Incentive Achievement
         cursor.execute(
             """SELECT
                 employee_id,
@@ -334,29 +334,57 @@ def get_daily_incentives(employee_id):
             (SELECT
                 employee_id,
                 metric,
-                (max(target) / min(target)) * max(variable_pay) as max_variable_pay,
-                (max(Achievement) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as Achievement,
-                (max(case when slab_segment = 'slab1' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab1_target,
-                (max(case when slab_segment = 'slab2' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab2_target,
-                (max(case when slab_segment = 'slab3' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab3_target
-            FROM
-            (SELECT dt.employee_id,
-                dt.date,
-                dt.metric,
-                ((e.variable_pay/31)) * dt.contribution as variable_pay,
-                dt.contribution,
-                dt.slab_segment,
-                max(dt.target) as target,
-                max(da.Achievement) as Achievement,
-                ((ifnull(da.Achievement,0) / ifnull(max(dt.target),0)) * dt.contribution) * ((e.variable_pay/31)) as Amount
-            FROM DayTargets dt
-            LEFT JOIN DayAchievement da ON dt.date = da.date AND dt.metric = da.metric AND dt.employee_id = da.employee_id
-            LEFT JOIN Executive e ON e.employee_id = dt.employee_id
-            WHERE dt.employee_id = %s
-                AND dt.date = curdate()
-            GROUP BY dt.employee_id, dt.date, dt.metric, e.variable_pay, dt.contribution, dt.slab_segment) base
-            GROUP BY base.employee_id, base.metric) base1
-            GROUP BY base1.employee_id""",
+                MAX(max_variable_pay) AS max_variable_pay,
+                MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END) AS slab1_target,
+                MAX(CASE WHEN slab_segment = 'slab2' THEN variable_pay * incentive_percent END) AS slab2_target,
+                MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END) AS slab3_target,
+                CASE
+                    WHEN MAX(Achievement) <= MAX(CASE WHEN slab_segment = 'slab1' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab1' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END)
+
+                    WHEN MAX(Achievement) BETWEEN MAX(CASE WHEN slab_segment = 'slab1' THEN target END) AND MAX(CASE WHEN slab_segment = 'slab2' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab2' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab2' THEN variable_pay * incentive_percent END)
+
+                    WHEN MAX(Achievement) BETWEEN MAX(CASE WHEN slab_segment = 'slab2' THEN target END) AND MAX(CASE WHEN slab_segment = 'slab3' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab3' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END)
+
+                    ELSE MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END)
+                END AS Achievement
+            FROM (
+                SELECT
+                    dt.employee_id,
+                    dt.date,
+                    dt.metric,
+                    dt.incentive_percent,
+                    ((e.variable_pay / 31)) * dt.contribution * dt.incentive_percent as max_variable_pay,
+                    ((e.variable_pay / 31)) * dt.contribution AS variable_pay,
+                    dt.contribution,
+                    dt.slab_segment,
+                    MAX(dt.target) AS target,
+                    MAX(da.Achievement) AS Achievement
+                FROM DayTargets dt
+                LEFT JOIN DayAchievement da
+                    ON dt.date = da.date
+                    AND dt.metric = da.metric
+                    AND dt.employee_id = da.employee_id
+                LEFT JOIN Executive e
+                    ON e.employee_id = dt.employee_id
+                WHERE dt.employee_id = %s
+                  AND dt.date = CURDATE()
+                GROUP BY
+                    dt.employee_id,
+                    dt.date,
+                    dt.metric,
+                    e.variable_pay,
+                    dt.contribution,
+                    dt.slab_segment,
+                    dt.incentive_percent
+            ) AS base
+            GROUP BY employee_id, metric) base1
+            GROUP BY employee_id""",
             (employee_id,)
         )
         result = cursor.fetchone()
@@ -373,7 +401,7 @@ def get_daily_incentives(employee_id):
                 'slab2_target': float(result['slab2_target']) if result['slab2_target'] else 0,
                 'slab3_target': float(result['slab3_target']) if result['slab3_target'] else 0
             }
-            print(f"✅ Daily incentive: ₹{incentive_data['achieved_amount']:.2f} / ₹{incentive_data['max_target']:.2f}")
+            print(f"[OK] Daily incentive: ₹{incentive_data['achieved_amount']:.2f} / ₹{incentive_data['max_target']:.2f}")
             return jsonify({'success': True, 'incentives': incentive_data}), 200
         else:
             return jsonify({'success': True, 'incentives': {
@@ -386,7 +414,7 @@ def get_daily_incentives(employee_id):
             }}), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -405,7 +433,7 @@ def get_weekly_incentives(employee_id):
     try:
         cursor = connection.cursor(dictionary=True)
 
-        # Week Incentive Achievement query with slab calculations
+        # Final Weekly Overall Incentive Achievement
         cursor.execute(
             """SELECT
                 employee_id,
@@ -418,29 +446,57 @@ def get_weekly_incentives(employee_id):
             (SELECT
                 employee_id,
                 metric,
-                (max(target) / min(target)) * max(variable_pay) as max_variable_pay,
-                (max(Achievement) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as Achievement,
-                (max(case when slab_segment = 'slab1' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab1_target,
-                (max(case when slab_segment = 'slab2' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab2_target,
-                (max(case when slab_segment = 'slab3' then target end) / max(target)) * ((max(target) / min(target)) * max(variable_pay)) as slab3_target
-            FROM
-            (SELECT wt.employee_id,
-                wt.yearweek,
-                wt.metric,
-                ((e.variable_pay/31) * 7) * wt.contribution as variable_pay,
-                wt.contribution,
-                wt.slab_segment,
-                max(wt.target) as target,
-                max(wa.Achievement) as Achievement,
-                ((ifnull(wa.Achievement,0) / ifnull(max(wt.target),0)) * wt.contribution) * ((e.variable_pay/31) * 7) as Amount
-            FROM WeekTargets wt
-            LEFT JOIN WeekAchievement wa ON wt.yearweek = wa.yearweek AND wt.metric = wa.metric AND wt.employee_id = wa.employee_id
-            LEFT JOIN Executive e ON e.employee_id = wt.employee_id
-            WHERE wt.yearweek = yearweek(curdate() + interval 1 day,1)
-                AND wt.employee_id = %s
-            GROUP BY wt.employee_id, wt.yearweek, wt.metric, e.variable_pay, wt.contribution, wt.slab_segment) base
-            GROUP BY base.employee_id, base.metric) base1
-            GROUP BY base1.employee_id""",
+                MAX(max_variable_pay) AS max_variable_pay,
+                MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END) AS slab1_target,
+                MAX(CASE WHEN slab_segment = 'slab2' THEN variable_pay * incentive_percent END) AS slab2_target,
+                MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END) AS slab3_target,
+                CASE
+                    WHEN MAX(Achievement) <= MAX(CASE WHEN slab_segment = 'slab1' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab1' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END)
+
+                    WHEN MAX(Achievement) BETWEEN MAX(CASE WHEN slab_segment = 'slab1' THEN target END) AND MAX(CASE WHEN slab_segment = 'slab2' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab2' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab2' THEN variable_pay * incentive_percent END)
+
+                    WHEN MAX(Achievement) BETWEEN MAX(CASE WHEN slab_segment = 'slab2' THEN target END) AND MAX(CASE WHEN slab_segment = 'slab3' THEN target END)
+                        THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab3' THEN target END))
+                             * MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END)
+
+                    ELSE MAX(CASE WHEN slab_segment = 'slab3' THEN variable_pay * incentive_percent END)
+                END AS Achievement
+            FROM (
+                SELECT
+                    wt.employee_id,
+                    wt.yearweek,
+                    wt.metric,
+                    wt.incentive_percent,
+                    ((e.variable_pay / 31) * 7) * wt.contribution * wt.incentive_percent as max_variable_pay,
+                    ((e.variable_pay / 31) * 7) * wt.contribution AS variable_pay,
+                    wt.contribution,
+                    wt.slab_segment,
+                    MAX(wt.target) AS target,
+                    MAX(wa.Achievement) AS Achievement
+                FROM WeekTargets wt
+                LEFT JOIN WeekAchievement wa
+                    ON wt.yearweek = wa.yearweek
+                    AND wt.metric = wa.metric
+                    AND wt.employee_id = wa.employee_id
+                LEFT JOIN Executive e
+                    ON e.employee_id = wt.employee_id
+                WHERE wt.employee_id = %s
+                  AND wt.yearweek = yearweek(curdate() + interval 1 day, 1)
+                GROUP BY
+                    wt.employee_id,
+                    wt.yearweek,
+                    wt.metric,
+                    e.variable_pay,
+                    wt.contribution,
+                    wt.slab_segment,
+                    wt.incentive_percent
+            ) AS base
+            GROUP BY employee_id, metric) base1
+            GROUP BY employee_id""",
             (employee_id,)
         )
         result = cursor.fetchone()
@@ -457,7 +513,7 @@ def get_weekly_incentives(employee_id):
                 'slab2_target': float(result['slab2_target']) if result['slab2_target'] else 0,
                 'slab3_target': float(result['slab3_target']) if result['slab3_target'] else 0
             }
-            print(f"✅ Weekly incentive: ₹{incentive_data['achieved_amount']:.2f} / ₹{incentive_data['max_target']:.2f}")
+            print(f"[OK] Weekly incentive: ₹{incentive_data['achieved_amount']:.2f} / ₹{incentive_data['max_target']:.2f}")
             return jsonify({'success': True, 'incentives': incentive_data}), 200
         else:
             return jsonify({'success': True, 'incentives': {
@@ -470,7 +526,7 @@ def get_weekly_incentives(employee_id):
             }}), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -499,7 +555,7 @@ def get_daily_targets(employee_id):
                 MAX(CASE WHEN slab_segment = 'slab1' THEN target END) AS slab1_target,
                 MAX(CASE WHEN slab_segment = 'slab2' THEN target END) AS slab2_target,
                 MAX(CASE WHEN slab_segment = 'slab3' THEN target END) AS slab3_target,
-                MAX(variable_pay) - IFNULL(CASE
+                MAX(max_variable_pay) - IFNULL(CASE
                     WHEN MAX(Achievement) <= MAX(CASE WHEN slab_segment = 'slab1' THEN target END)
                         THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab1' THEN target END))
                              * MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END)
@@ -521,6 +577,7 @@ def get_daily_targets(employee_id):
                     dt.metric,
                     dt.unit,
                     dt.incentive_percent,
+                    ((e.variable_pay / 31)) * dt.contribution * dt.incentive_percent as max_variable_pay,
                     ((e.variable_pay / 31)) * dt.contribution AS variable_pay,
                     dt.contribution,
                     dt.slab_segment,
@@ -580,11 +637,11 @@ def get_daily_targets(employee_id):
                 'incentive_pending': incentive_pending
             })
 
-        print(f"✅ Found {len(result)} daily targets with slab info")
+        print(f"[OK] Found {len(result)} daily targets with slab info")
         return jsonify({'success': True, 'targets': result}), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -613,7 +670,7 @@ def get_weekly_targets(employee_id):
                 MAX(CASE WHEN slab_segment = 'slab1' THEN target END) AS slab1_target,
                 MAX(CASE WHEN slab_segment = 'slab2' THEN target END) AS slab2_target,
                 MAX(CASE WHEN slab_segment = 'slab3' THEN target END) AS slab3_target,
-                MAX(variable_pay) - IFNULL(CASE
+                MAX(max_variable_pay) - IFNULL(CASE
                     WHEN MAX(Achievement) <= MAX(CASE WHEN slab_segment = 'slab1' THEN target END)
                         THEN (MAX(Achievement) / MAX(CASE WHEN slab_segment = 'slab1' THEN target END))
                              * MAX(CASE WHEN slab_segment = 'slab1' THEN variable_pay * incentive_percent END)
@@ -635,6 +692,7 @@ def get_weekly_targets(employee_id):
                     wt.metric,
                     wt.unit,
                     wt.incentive_percent,
+                    ((e.variable_pay / 31) * 7) * wt.contribution * wt.incentive_percent as max_variable_pay,
                     ((e.variable_pay / 31) * 7) * wt.contribution AS variable_pay,
                     wt.contribution,
                     wt.slab_segment,
@@ -694,11 +752,11 @@ def get_weekly_targets(employee_id):
                 'incentive_pending': incentive_pending
             })
 
-        print(f"✅ Found {len(result)} weekly targets with slab info")
+        print(f"[OK] Found {len(result)} weekly targets with slab info")
         return jsonify({'success': True, 'targets': result}), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -766,7 +824,7 @@ def get_leaderboard(employee_id):
                     'rankings': cluster_rankings
                 })
 
-            print(f"✅ Found {len(rankings)} rankings in {len(result)} clusters for {period}/{layer}")
+            print(f"[OK] Found {len(rankings)} rankings in {len(result)} clusters for {period}/{layer}")
             return jsonify({
                 'success': True,
                 'rankings': result,
@@ -787,7 +845,7 @@ def get_leaderboard(employee_id):
                     'isCurrentUser': rank_data['employee_id'] == employee_id
                 })
 
-            print(f"✅ Found {len(result)} rankings for {period}/{layer}")
+            print(f"[OK] Found {len(result)} rankings for {period}/{layer}")
             return jsonify({
                 'success': True,
                 'rankings': result,
@@ -797,7 +855,7 @@ def get_leaderboard(employee_id):
             }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -837,7 +895,7 @@ def get_nudge_zone_customers(employee_id):
                 'lastOrder': f"{customer.get('LastOrder')} days ago" if customer.get('LastOrder') else 'No orders yet'
             })
 
-        print(f"✅ Found {len(customers)} Nudge Zone customers")
+        print(f"[OK] Found {len(customers)} Nudge Zone customers")
         if customers:
             print(f"📄 Sample customer data: {customers[0]}")
 
@@ -847,7 +905,7 @@ def get_nudge_zone_customers(employee_id):
         }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -887,7 +945,7 @@ def get_so_close_customers(employee_id):
                 'lastSeen': f"{int(customer.get('LastOpened'))} hours ago" if customer.get('LastOpened') else 'Recently'
             })
 
-        print(f"✅ Found {len(customers)} So Close customers")
+        print(f"[OK] Found {len(customers)} So Close customers")
         if customers:
             print(f"📄 Sample customer data: {customers[0]}")
 
@@ -897,7 +955,7 @@ def get_so_close_customers(employee_id):
         }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -955,7 +1013,7 @@ def log_event():
         cursor.execute(query, (entry_date, entry_time, employee_id, event_name, meta_data_str))
         connection.commit()
 
-        print(f"✅ Event logged: {event_name} at {entry_time}")
+        print(f"[OK] Event logged: {event_name} at {entry_time}")
 
         cursor.close()
         connection.close()
@@ -972,10 +1030,10 @@ def log_event():
         }), 200
 
     except Error as e:
-        print(f"❌ Database error logging event: {e}")
+        print(f"[ERROR] Database error logging event: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     except Exception as e:
-        print(f"❌ Error logging event: {e}")
+        print(f"[ERROR] Error logging event: {e}")
         return jsonify({'success': False, 'message': 'Server error', 'error': str(e)}), 500
 
 # Get customers by metric for Target page
@@ -1052,7 +1110,7 @@ def get_target_customers(employee_id):
         # Convert dictionary to list
         customers = list(customer_dict.values())
 
-        print(f"✅ Found {len(customers)} customers for metric '{metric}' ({period}, layer: {layer})")
+        print(f"[OK] Found {len(customers)} customers for metric '{metric}' ({period}, layer: {layer})")
         if customers:
             print(f"📄 Sample customer data: {customers[0]}")
 
@@ -1064,7 +1122,314 @@ def get_target_customers(employee_id):
         }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# ============================================================================
+# ATTENTION TAB ENDPOINTS (SA_CustomerPageAttention)
+# ============================================================================
+
+@app.route('/api/attention/metrics/<employee_id>', methods=['GET'])
+def get_attention_metrics(employee_id):
+    """Get distinct metrics from SA_CustomerPageAttention for an employee"""
+    print(f"\n[CHECK] Fetching attention metrics for employee: {employee_id}")
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get metrics for this employee OR records with NULL employee_id
+        query = """
+            SELECT DISTINCT metric
+            FROM SA_CustomerPageAttention
+            WHERE (employee_id = %s OR employee_id IS NULL) AND metric IS NOT NULL
+            ORDER BY metric
+        """
+
+        cursor.execute(query, (employee_id,))
+        results = cursor.fetchall()
+
+        metrics = [row['metric'] for row in results if row['metric']]
+
+        print(f"[OK] Found {len(metrics)} distinct metrics for attention tab")
+
+        return jsonify({
+            'success': True,
+            'metrics': metrics,
+            'count': len(metrics)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/attention/customers/<employee_id>', methods=['GET'])
+def get_attention_customers(employee_id):
+    """Get unique customers for a specific metric from SA_CustomerPageAttention"""
+    metric = request.args.get('metric', '')
+    print(f"\n[CHECK] Fetching attention customers for metric '{metric}' and employee: {employee_id}")
+
+    if not metric:
+        return jsonify({'success': False, 'message': 'Metric parameter is required'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get unique customers for this metric
+        # Include customers with matching employee_id OR NULL employee_id
+        # If metric is "All", return customers from all metrics
+        if metric == 'All':
+            query = """
+                SELECT DISTINCT
+                    customer_id,
+                    customername,
+                    contactnumber
+                FROM SA_CustomerPageAttention
+                WHERE (employee_id = %s OR employee_id IS NULL)
+                ORDER BY customer_id
+            """
+            cursor.execute(query, (employee_id,))
+        else:
+            query = """
+                SELECT DISTINCT
+                    customer_id,
+                    customername,
+                    contactnumber
+                FROM SA_CustomerPageAttention
+                WHERE (employee_id = %s OR employee_id IS NULL) AND metric = %s
+                ORDER BY customer_id
+            """
+            cursor.execute(query, (employee_id, metric))
+        raw_customers = cursor.fetchall()
+
+        # Transform data to match frontend expectations
+        customers = []
+        for customer in raw_customers:
+            customers.append({
+                'customerId': customer.get('customer_id'),
+                'customerName': customer.get('customername') or 'Unknown',
+                'phoneNumber': str(customer.get('contactnumber')) if customer.get('contactnumber') else 'N/A'
+            })
+
+        print(f"[OK] Found {len(customers)} unique customers for metric '{metric}'")
+
+        return jsonify({
+            'success': True,
+            'customers': customers,
+            'metric': metric,
+            'count': len(customers)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/attention/sku-details/<employee_id>/<customer_id>', methods=['GET'])
+def get_attention_sku_details(employee_id, customer_id):
+    """Get SKU details for a specific customer from SA_CustomerPageAttention"""
+    metric = request.args.get('metric', '')
+    print(f"\n[CHECK] Fetching SKU details for customer {customer_id}, metric '{metric}', employee: {employee_id}")
+
+    if not metric:
+        return jsonify({'success': False, 'message': 'Metric parameter is required'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get all SKU details for this customer and metric
+        # Include records where employee_id matches OR is NULL (for records not assigned to specific employees)
+        # If metric is "All", return all SKU records across all metrics
+        if metric == 'All':
+            query = """
+                SELECT
+                    skuid,
+                    skuname,
+                    metric,
+                    orderkg,
+                    billedkg,
+                    salekg,
+                    returnkg,
+                    readjustmentkg,
+                    shopreachtime,
+                    ontime,
+                    date
+                FROM SA_CustomerPageAttention
+                WHERE (employee_id = %s OR employee_id IS NULL)
+                    AND customer_id = %s
+                ORDER BY date DESC, metric, skuid
+            """
+            cursor.execute(query, (employee_id, customer_id))
+        else:
+            query = """
+                SELECT
+                    skuid,
+                    skuname,
+                    metric,
+                    orderkg,
+                    billedkg,
+                    salekg,
+                    returnkg,
+                    readjustmentkg,
+                    shopreachtime,
+                    ontime,
+                    date
+                FROM SA_CustomerPageAttention
+                WHERE (employee_id = %s OR employee_id IS NULL)
+                    AND customer_id = %s
+                    AND metric = %s
+                ORDER BY date DESC, skuid
+            """
+            cursor.execute(query, (employee_id, customer_id, metric))
+        sku_records = cursor.fetchall()
+
+        # Transform data to match frontend expectations
+        skus = []
+        for record in sku_records:
+            # Format shopreachtime if it exists
+            reach_time = None
+            if record.get('shopreachtime'):
+                reach_time = str(record['shopreachtime'])
+
+            skus.append({
+                'skuId': record.get('skuid'),
+                'skuName': record.get('skuname') or 'Unknown SKU',
+                'metric': record.get('metric'),  # Include metric for "All" filter
+                'orderKg': float(record.get('orderkg')) if record.get('orderkg') is not None else 0,
+                'billedKg': float(record.get('billedkg')) if record.get('billedkg') is not None else 0,
+                'saleKg': float(record.get('salekg')) if record.get('salekg') is not None else 0,
+                'returnKg': float(record.get('returnkg')) if record.get('returnkg') is not None else 0,
+                'readjustmentKg': float(record.get('readjustmentkg')) if record.get('readjustmentkg') is not None else 0,
+                'shopReachTime': reach_time,
+                'onTime': bool(record.get('ontime')) if record.get('ontime') is not None else False,
+                'date': record.get('date').strftime('%Y-%m-%d') if record.get('date') else None
+            })
+
+        print(f"[OK] Found {len(skus)} SKU records for customer {customer_id}")
+
+        return jsonify({
+            'success': True,
+            'skus': skus,
+            'count': len(skus),
+            'customerId': customer_id,
+            'metric': metric
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# ============================================================================
+# BASE TAB ENDPOINTS (SA_CustomerPageBase)
+# ============================================================================
+
+@app.route('/api/base/customers/<employee_id>', methods=['GET'])
+def get_base_customers(employee_id):
+    """Get all base customers for an employee with optional filters"""
+    customer_id_filter = request.args.get('customer_id', '')
+    contact_filter = request.args.get('contact', '')
+
+    print(f"\n[CHECK] Fetching base customers for employee: {employee_id}")
+    if customer_id_filter:
+        print(f"[FILTER] Customer ID: {customer_id_filter}")
+    if contact_filter:
+        print(f"[FILTER] Contact Number: {contact_filter}")
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Build query with optional filters
+        query = """
+            SELECT
+                customer_id,
+                customername,
+                contactnumber,
+                customertype,
+                customernature,
+                locality,
+                facility,
+                cluster,
+                latestsubscriptionenddate,
+                latestsubscriptionamount,
+                LOD
+            FROM SA_CustomerPageBase
+            WHERE (employee_id = %s OR employee_id IS NULL)
+        """
+
+        params = [employee_id]
+
+        # Add customer_id filter if provided
+        if customer_id_filter:
+            query += " AND customer_id = %s"
+            params.append(int(customer_id_filter))
+
+        # Add contact filter if provided
+        if contact_filter:
+            query += " AND contactnumber = %s"
+            params.append(int(contact_filter))
+
+        query += " ORDER BY customername"
+
+        cursor.execute(query, tuple(params))
+        customers = cursor.fetchall()
+
+        # Transform data to match frontend expectations
+        formatted_customers = []
+        for customer in customers:
+            formatted_customers.append({
+                'customerId': customer.get('customer_id'),
+                'customerName': customer.get('customername') or 'Unknown',
+                'phoneNumber': str(customer.get('contactnumber')) if customer.get('contactnumber') else 'N/A',
+                'customerType': customer.get('customertype'),
+                'customerNature': customer.get('customernature'),
+                'locality': customer.get('locality'),
+                'facility': customer.get('facility'),
+                'cluster': customer.get('cluster'),
+                'subscriptionEndDate': customer.get('latestsubscriptionenddate').strftime('%Y-%m-%d') if customer.get('latestsubscriptionenddate') else None,
+                'subscriptionAmount': float(customer.get('latestsubscriptionamount')) if customer.get('latestsubscriptionamount') else None,
+                'lastOrderDate': customer.get('LOD').strftime('%Y-%m-%d') if customer.get('LOD') else None
+            })
+
+        print(f"[OK] Found {len(formatted_customers)} base customers")
+
+        return jsonify({
+            'success': True,
+            'customers': formatted_customers,
+            'count': len(formatted_customers)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -1121,7 +1486,7 @@ def get_notifications():
                 'priority': priority
             })
 
-        print(f"✅ Found {len(news_items)} notifications")
+        print(f"[OK] Found {len(news_items)} notifications")
         return jsonify({
             'success': True,
             'notifications': news_items,
@@ -1129,7 +1494,7 @@ def get_notifications():
         }), 200
 
     except Error as e:
-        print(f"❌ Database error: {e}")
+        print(f"[ERROR] Database error: {e}")
         return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
     finally:
         if connection and connection.is_connected():
@@ -1150,28 +1515,28 @@ if __name__ == '__main__':
     print("💚 Health Check: http://localhost:5000/api/health")
     print(f"🗄️  Database: {DB_CONFIG['database']} @ {DB_CONFIG['host']}:{DB_CONFIG['port']}")
     print("\n✨ Features:")
-    print("   ✅ Validates against Executive table")
-    print("   ✅ Only allows BUSINESS_DEVELOPMENT_EXECUTIVE role")
-    print("   ✅ Stores data in SalesExecutiveApp_Login table")
-    print("   ✅ Password hashing with SHA-256")
-    print("   ✅ Login with database verification")
+    print("   [OK] Validates against Executive table")
+    print("   [OK] Only allows BUSINESS_DEVELOPMENT_EXECUTIVE role")
+    print("   [OK] Stores data in SalesExecutiveApp_Login table")
+    print("   [OK] Password hashing with SHA-256")
+    print("   [OK] Login with database verification")
     print("="*70 + "\n")
 
     # Test database connection
-    print("🔍 Testing database connection...")
+    print("[CHECK] Testing database connection...")
     connection = get_db_connection()
     if connection:
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT COUNT(*) FROM Executive")
             count = cursor.fetchone()[0]
-            print(f"✅ Database connected! Found {count} executives in database\n")
+            print(f"[OK] Database connected! Found {count} executives in database\n")
             cursor.close()
             connection.close()
         except Error as e:
-            print(f"❌ Database query failed: {e}\n")
+            print(f"[ERROR] Database query failed: {e}\n")
     else:
-        print("❌ Failed to connect to database\n")
+        print("[ERROR] Failed to connect to database\n")
 
     print("🚀 Starting Flask server...\n")
 

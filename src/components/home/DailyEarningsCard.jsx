@@ -93,8 +93,8 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
         {/* Top Section - Final Push - Mobile optimized */}
         <div className="flex items-center space-x-2 md:space-x-3 mb-3">
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-danger to-warning rounded-xl flex items-center justify-center shadow-lg">
-              <FaFire className="text-white text-lg md:text-xl animate-pulse" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-danger to-warning rounded-xl flex items-center justify-center shadow-lg">
+              <FaFire className="text-white text-base md:text-lg animate-pulse" />
             </div>
           </div>
           <div className="flex-1">
@@ -130,9 +130,10 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
               </div>
 
               {/* Colored Slab Markers with hover/tap tooltips - Mobile optimized */}
-              {slab1Percent > 0 && slab1Percent < 95 && (
+              {/* Slab 1 - Always show if exists and not at edges */}
+              {slab1Percent > 2 && slab1Percent < 98 && (
                 <div
-                  className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+                  className="absolute top-0 h-full transform -translate-x-1/2 group z-50 flex items-center"
                   style={{ left: `${slab1Percent}%` }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -142,15 +143,16 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
                   {/* Marker Circle - Larger on mobile for easier tapping */}
                   <div className="w-7 h-7 md:w-6 md:h-6 bg-blue-500 rounded-full border-3 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
                   {/* Slab Label with Name + Value - Show on HOVER or TAP */}
-                  <div className={`absolute top-9 md:top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 1 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={`absolute top-9 md:top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold shadow-xl whitespace-nowrap transition-opacity pointer-events-none z-50 ${activeSlab === 1 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} style={{ transform: 'translateX(-50%) translateZ(100px)' }}>
                     <div>Slab 1</div>
                     <div>₹{Math.round(data.slab1_target).toLocaleString()}</div>
                   </div>
                 </div>
               )}
-              {slab2Percent > 0 && slab2Percent < 95 && (
+              {/* Slab 2 - Always show if exists and not at edges */}
+              {slab2Percent > 2 && slab2Percent < 98 && (
                 <div
-                  className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+                  className="absolute top-0 h-full transform -translate-x-1/2 group z-50 flex items-center"
                   style={{ left: `${slab2Percent}%` }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -160,15 +162,16 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
                   {/* Marker Circle - Larger on mobile for easier tapping */}
                   <div className="w-7 h-7 md:w-6 md:h-6 bg-yellow-500 rounded-full border-3 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
                   {/* Slab Label with Name + Value - Show on HOVER or TAP */}
-                  <div className={`absolute top-9 md:top-8 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 2 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={`absolute top-9 md:top-8 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold shadow-xl whitespace-nowrap transition-opacity pointer-events-none z-50 ${activeSlab === 2 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} style={{ transform: 'translateX(-50%) translateZ(100px)' }}>
                     <div>Slab 2</div>
                     <div>₹{Math.round(data.slab2_target).toLocaleString()}</div>
                   </div>
                 </div>
               )}
+              {/* Slab 3 (Target) - Always show at 100% */}
               {slab3Percent > 0 && (
                 <div
-                  className="absolute top-0 h-full transform -translate-x-1/2 group z-10 flex items-center"
+                  className="absolute top-0 h-full transform -translate-x-1/2 group z-50 flex items-center"
                   style={{ left: '100%' }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -178,7 +181,7 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
                   {/* Marker Circle - Larger on mobile for easier tapping */}
                   <div className="w-7 h-7 md:w-6 md:h-6 bg-purple-500 rounded-full border-3 border-white shadow-lg cursor-pointer hover:scale-125 active:scale-110 transition-transform"></div>
                   {/* Slab Label with Name + Value - Show on HOVER or TAP - Always position left */}
-                  <div className={`absolute top-9 md:top-8 right-0 transform bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg whitespace-nowrap transition-opacity pointer-events-none z-20 ${activeSlab === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className={`absolute top-9 md:top-8 right-0 transform bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold shadow-xl whitespace-nowrap transition-opacity pointer-events-none z-50 ${activeSlab === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} style={{ transform: 'translateZ(100px)' }}>
                     <div>Slab 3 (Target)</div>
                     <div>₹{Math.round(data.slab3_target).toLocaleString()}</div>
                   </div>
@@ -238,7 +241,8 @@ const DailyEarningsCard = forwardRef((_props, ref) => {
             transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
             willChange: 'transform',
             WebkitBackfaceVisibility: 'hidden',
-            backfaceVisibility: 'hidden'
+            backfaceVisibility: 'hidden',
+            overflow: 'visible'
           }}
         >
           {/* Daily Card (Front) - Mobile optimized padding */}
