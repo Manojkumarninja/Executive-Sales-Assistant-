@@ -1191,8 +1191,8 @@ def get_attention_customers(employee_id):
         cursor = connection.cursor(dictionary=True)
 
         # Get unique customers for this metric
-        # Include customers with matching employee_id OR NULL employee_id
-        # If metric is "All", return customers from all metrics
+        # Filter by employee_id to show only customers assigned to this employee
+        # If metric is "All", return customers from all metrics for this employee
         if metric == 'All':
             query = """
                 SELECT DISTINCT
@@ -1200,7 +1200,7 @@ def get_attention_customers(employee_id):
                     customername,
                     contactnumber
                 FROM SA_CustomerPageAttention
-                WHERE (employee_id = %s OR employee_id IS NULL)
+                WHERE employee_id = %s
                 ORDER BY customer_id
             """
             cursor.execute(query, (employee_id,))
@@ -1211,7 +1211,7 @@ def get_attention_customers(employee_id):
                     customername,
                     contactnumber
                 FROM SA_CustomerPageAttention
-                WHERE (employee_id = %s OR employee_id IS NULL) AND metric = %s
+                WHERE employee_id = %s AND metric = %s
                 ORDER BY customer_id
             """
             cursor.execute(query, (employee_id, metric))
@@ -1260,8 +1260,8 @@ def get_attention_sku_details(employee_id, customer_id):
         cursor = connection.cursor(dictionary=True)
 
         # Get all SKU details for this customer and metric
-        # Include records where employee_id matches OR is NULL (for records not assigned to specific employees)
-        # If metric is "All", return all SKU records across all metrics
+        # Filter by employee_id to show only SKUs assigned to this employee
+        # If metric is "All", return all SKU records across all metrics for this employee
         if metric == 'All':
             query = """
                 SELECT
@@ -1277,7 +1277,7 @@ def get_attention_sku_details(employee_id, customer_id):
                     ontime,
                     date
                 FROM SA_CustomerPageAttention
-                WHERE (employee_id = %s OR employee_id IS NULL)
+                WHERE employee_id = %s
                     AND customer_id = %s
                 ORDER BY date DESC, metric, skuid
             """
@@ -1297,7 +1297,7 @@ def get_attention_sku_details(employee_id, customer_id):
                     ontime,
                     date
                 FROM SA_CustomerPageAttention
-                WHERE (employee_id = %s OR employee_id IS NULL)
+                WHERE employee_id = %s
                     AND customer_id = %s
                     AND metric = %s
                 ORDER BY date DESC, skuid
