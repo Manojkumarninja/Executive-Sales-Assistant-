@@ -1036,6 +1036,53 @@ def log_event():
         print(f"[ERROR] Error logging event: {e}")
         return jsonify({'success': False, 'message': 'Server error', 'error': str(e)}), 500
 
+# Get available metrics from SA_CustomerPageCustomers for Target page dropdown
+@app.route('/api/target-metrics/<employee_id>', methods=['GET'])
+def get_target_metrics(employee_id):
+    """Get distinct metrics available for an employee in SA_CustomerPageCustomers table"""
+    period = request.args.get('period', 'daily')  # 'daily' or 'weekly'
+
+    # Map period to layer
+    layer = 'day' if period == 'daily' else 'week'
+
+    print(f"\n📋 Fetching available metrics ({period}, layer: {layer}) for employee: {employee_id}")
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get distinct metrics for this employee and layer
+        query = """
+            SELECT DISTINCT metric
+            FROM SA_CustomerPageCustomers
+            WHERE employee_id = %s AND layer = %s
+            ORDER BY metric
+        """
+        cursor.execute(query, (employee_id, layer))
+        results = cursor.fetchall()
+
+        # Extract metric names
+        metrics = [row['metric'] for row in results if row['metric']]
+
+        print(f"[OK] Found {len(metrics)} metrics: {metrics}")
+
+        return jsonify({
+            'success': True,
+            'metrics': metrics,
+            'count': len(metrics)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
 # Get customers by metric for Target page
 @app.route('/api/target-customers/<employee_id>', methods=['GET'])
 def get_target_customers(employee_id):

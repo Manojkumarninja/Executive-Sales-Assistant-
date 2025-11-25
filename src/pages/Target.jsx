@@ -20,6 +20,8 @@ const Target = () => {
   const [targetType, setTargetType] = useState('daily'); // 'daily' or 'weekly'
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [availableMetrics, setAvailableMetrics] = useState([]); // Metrics from SA_CustomerPageCustomers
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('');
   const [metricCustomers, setMetricCustomers] = useState([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
@@ -112,6 +114,43 @@ const Target = () => {
     fetchTargets();
   }, [fetchTargets]);
 
+  // Fetch available metrics from SA_CustomerPageCustomers table
+  const fetchAvailableMetrics = useCallback(async () => {
+    setLoadingMetrics(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('user_data'));
+      if (!user?.employee_id) {
+        console.error('No employee ID found');
+        setAvailableMetrics([]);
+        setLoadingMetrics(false);
+        return;
+      }
+
+      const endpoint = `${API_BASE_URL}/target-metrics/${user.employee_id}?period=${targetType}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+
+      if (data.success && data.metrics) {
+        setAvailableMetrics(data.metrics);
+      } else {
+        console.warn('No metrics found');
+        setAvailableMetrics([]);
+      }
+    } catch (error) {
+      console.error('Error fetching available metrics:', error);
+      setAvailableMetrics([]);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  }, [targetType]);
+
+  // Fetch available metrics when Target tab is active or targetType changes
+  useEffect(() => {
+    if (activeTab === 'target') {
+      fetchAvailableMetrics();
+    }
+  }, [activeTab, fetchAvailableMetrics]);
+
   // Fetch customers based on selected metric and target type (daily/weekly) with caching
   const fetchCustomersByMetric = useCallback(async (metricName, period) => {
     if (!metricName) {
@@ -174,10 +213,11 @@ const Target = () => {
     console.log('🔄 Refreshing target data...');
     trackPullToRefresh('Target');
     await fetchTargets();
+    await fetchAvailableMetrics();
     if (selectedMetric) {
       await fetchCustomersByMetric(selectedMetric, targetType);
     }
-  }, [fetchTargets, selectedMetric, targetType, fetchCustomersByMetric]);
+  }, [fetchTargets, fetchAvailableMetrics, selectedMetric, targetType, fetchCustomersByMetric]);
 
   const { isRefreshing } = usePullToRefresh(handleRefresh);
 
@@ -435,9 +475,9 @@ const Target = () => {
 
               {/* Custom Metric Dropdown */}
               <CustomDropdown
-                options={targets.map(target => ({
-                  value: target.name,
-                  label: target.name
+                options={availableMetrics.map(metric => ({
+                  value: metric,
+                  label: metric
                 }))}
                 value={selectedMetric}
                 onChange={(value) => {
@@ -446,6 +486,7 @@ const Target = () => {
                   trackCustomersMetricSelected(value, targetType);
                 }}
                 placeholder="Choose Metric"
+                disabled={loadingMetrics}
               />
             </div>
           )}
