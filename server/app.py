@@ -1415,9 +1415,9 @@ def get_base_customers(employee_id):
     try:
         cursor = connection.cursor(dictionary=True)
 
-        # Build query with optional filters
+        # Build query with optional filters - use DISTINCT to get unique customers
         query = """
-            SELECT
+            SELECT DISTINCT
                 customer_id,
                 customername,
                 contactnumber,
@@ -1430,7 +1430,7 @@ def get_base_customers(employee_id):
                 latestsubscriptionamount,
                 LOD
             FROM SA_CustomerPageBase
-            WHERE (employee_id = %s OR employee_id IS NULL)
+            WHERE employee_id = %s
         """
 
         params = [employee_id]
