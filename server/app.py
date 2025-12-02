@@ -1393,6 +1393,210 @@ def get_attention_sku_details(employee_id, customer_id):
             connection.close()
 
 # ============================================================================
+# TODAYS ORDERS TAB ENDPOINTS (SA_CustomerPageTodayOrders)
+# ============================================================================
+
+@app.route('/api/todays-orders/layers/<employee_id>', methods=['GET'])
+def get_todays_orders_layers(employee_id):
+    """Get distinct layers available for an employee in SA_CustomerPageTodayOrders table"""
+    print(f"\n📋 Fetching available layers for Today's Orders for employee: {employee_id}")
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get distinct layers for this employee
+        query = """
+            SELECT DISTINCT layer
+            FROM SA_CustomerPageTodayOrders
+            WHERE employee_id = %s
+            ORDER BY layer
+        """
+        cursor.execute(query, (employee_id,))
+        results = cursor.fetchall()
+
+        # Extract layer names
+        layers = [row['layer'] for row in results if row['layer']]
+
+        print(f"[OK] Found {len(layers)} layers: {layers}")
+
+        return jsonify({
+            'success': True,
+            'layers': layers,
+            'count': len(layers)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/todays-orders/customers/<employee_id>', methods=['GET'])
+def get_todays_orders_customers(employee_id):
+    """Get unique customers for a specific layer from SA_CustomerPageTodayOrders"""
+    layer = request.args.get('layer', '')
+    print(f"\n[CHECK] Fetching Today's Orders customers for layer '{layer}' and employee: {employee_id}")
+
+    if not layer:
+        return jsonify({'success': False, 'message': 'Layer parameter is required'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get unique customers for this employee and layer with their latest order time
+        query = """
+            SELECT
+                customer_id,
+                customername,
+                contactnumber,
+                MAX(ordertime) as ordertime
+            FROM SA_CustomerPageTodayOrders
+            WHERE employee_id = %s AND layer = %s
+            GROUP BY customer_id, customername, contactnumber
+            ORDER BY customer_id
+        """
+        cursor.execute(query, (employee_id, layer))
+        raw_customers = cursor.fetchall()
+
+        # Transform data to match frontend expectations
+        customers = []
+        for customer in raw_customers:
+            # Handle ordertime - could be datetime or string
+            order_time = customer.get('ordertime')
+            formatted_time = None
+            if order_time:
+                try:
+                    if hasattr(order_time, 'strftime'):
+                        formatted_time = order_time.strftime('%H:%M:%S')
+                    else:
+                        formatted_time = str(order_time)
+                except:
+                    formatted_time = str(order_time) if order_time else None
+
+            customers.append({
+                'customerId': customer.get('customer_id'),
+                'customerName': customer.get('customername') or 'Unknown',
+                'contactNumber': str(customer.get('contactnumber')) if customer.get('contactnumber') else 'N/A',
+                'orderTime': formatted_time
+            })
+
+        print(f"[OK] Found {len(customers)} unique customers for layer '{layer}'")
+
+        return jsonify({
+            'success': True,
+            'customers': customers,
+            'layer': layer,
+            'count': len(customers)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/todays-orders/sku-details/<employee_id>/<customer_id>', methods=['GET'])
+def get_todays_orders_sku_details(employee_id, customer_id):
+    """Get SKU details for a specific customer from SA_CustomerPageTodayOrders"""
+    layer = request.args.get('layer', '')
+    print(f"\n[CHECK] Fetching SKU details for customer {customer_id}, layer '{layer}', employee: {employee_id}")
+
+    if not layer:
+        return jsonify({'success': False, 'message': 'Layer parameter is required'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        # Get all SKU details for this customer and layer
+        # First, try to get all columns to see what's available
+        query = """
+            SELECT *
+            FROM SA_CustomerPageTodayOrders
+            WHERE employee_id = %s
+                AND customer_id = %s
+                AND layer = %s
+            LIMIT 1
+        """
+        cursor.execute(query, (employee_id, customer_id, layer))
+        sample_record = cursor.fetchone()
+
+        if sample_record:
+            print(f"[DEBUG] Available columns: {list(sample_record.keys())}")
+
+        # Now get all records
+        query = """
+            SELECT *
+            FROM SA_CustomerPageTodayOrders
+            WHERE employee_id = %s
+                AND customer_id = %s
+                AND layer = %s
+        """
+        cursor.execute(query, (employee_id, customer_id, layer))
+        sku_records = cursor.fetchall()
+
+        # Transform data to match frontend expectations
+        skus = []
+        for sku in sku_records:
+            # Use exact column names from database
+            sku_id = sku.get('skuid')
+            sku_name = sku.get('Sku') or 'Unknown'  # Column is 'Sku' not 'skuname'
+            order_qty = sku.get('orderqty') or 0
+            order_kg = sku.get('orderkg') or 0
+
+            # Handle date - it could be datetime, date, or string
+            date_value = sku.get('date')
+            formatted_date = None
+            if date_value:
+                try:
+                    if hasattr(date_value, 'strftime'):
+                        formatted_date = date_value.strftime('%Y-%m-%d')
+                    else:
+                        formatted_date = str(date_value)
+                except Exception as date_err:
+                    print(f"[WARN] Date formatting error: {date_err}")
+                    formatted_date = str(date_value) if date_value else None
+
+            skus.append({
+                'skuId': sku_id,
+                'skuName': sku_name,
+                'orderQty': float(order_qty) if order_qty is not None else 0.0,
+                'orderKg': float(order_kg) if order_kg is not None else 0.0,
+                'date': formatted_date
+            })
+
+        print(f"[OK] Found {len(skus)} SKU records for customer {customer_id}")
+
+        return jsonify({
+            'success': True,
+            'skus': skus,
+            'count': len(skus)
+        }), 200
+
+    except Error as e:
+        print(f"[ERROR] Database error: {e}")
+        return jsonify({'success': False, 'message': 'Database error', 'error': str(e)}), 500
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# ============================================================================
 # BASE TAB ENDPOINTS (SA_CustomerPageBase)
 # ============================================================================
 

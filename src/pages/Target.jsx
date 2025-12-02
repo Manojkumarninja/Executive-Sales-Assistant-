@@ -4,8 +4,9 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import CustomerDetailModal from '../components/shared/CustomerDetailModal';
 import AttentionSKUModal from '../components/shared/AttentionSKUModal';
 import BaseCustomerDetailModal from '../components/shared/BaseCustomerDetailModal';
+import TodaysOrdersSKUModal from '../components/shared/TodaysOrdersSKUModal';
 import CustomDropdown from '../components/shared/CustomDropdown';
-import { FaChevronDown, FaUser, FaPhone, FaBullseye, FaExclamationCircle, FaDatabase } from 'react-icons/fa';
+import { FaChevronDown, FaUser, FaPhone, FaBullseye, FaExclamationCircle, FaDatabase, FaShoppingCart } from 'react-icons/fa';
 import { trackPageView, trackCustomersPageToggle, trackPullToRefresh, trackCustomerDetailViewed, trackCustomersMetricSelected } from '../utils/analytics';
 import { useDataCache } from '../contexts/DataCacheContext';
 import { API_BASE_URL } from '../config';
@@ -14,7 +15,7 @@ const Target = () => {
   const { getCache, updateCache, getTargetCustomersCache, updateTargetCustomersCache } = useDataCache();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState('target'); // 'target', 'attention', 'base'
+  const [activeTab, setActiveTab] = useState('target'); // 'target', 'todaysOrders', 'attention', 'base'
 
   // Target tab state
   const [targetType, setTargetType] = useState('daily'); // 'daily' or 'weekly'
@@ -36,6 +37,16 @@ const Target = () => {
   const [loadingAttentionCustomers, setLoadingAttentionCustomers] = useState(false);
   const [isAttentionModalOpen, setIsAttentionModalOpen] = useState(false);
   const [selectedAttentionCustomer, setSelectedAttentionCustomer] = useState(null);
+
+  // Today's Orders tab state
+  const [todaysOrdersLayers, setTodaysOrdersLayers] = useState([]);
+  const [loadingTodaysOrdersLayers, setLoadingTodaysOrdersLayers] = useState(false);
+  const [selectedTodaysOrdersLayer, setSelectedTodaysOrdersLayer] = useState('');
+  const [todaysOrdersCustomers, setTodaysOrdersCustomers] = useState([]);
+  const [loadingTodaysOrdersCustomers, setLoadingTodaysOrdersCustomers] = useState(false);
+  const [isTodaysOrdersModalOpen, setIsTodaysOrdersModalOpen] = useState(false);
+  const [selectedTodaysOrdersCustomer, setSelectedTodaysOrdersCustomer] = useState(null);
+  const [todaysOrdersSkus, setTodaysOrdersSkus] = useState([]);
 
   // Base tab state
   const [baseCustomers, setBaseCustomers] = useState([]);
@@ -337,6 +348,122 @@ const Target = () => {
   };
 
   // ============================================================================
+  // TODAY'S ORDERS TAB FUNCTIONS
+  // ============================================================================
+
+  // Fetch layers when Today's Orders tab is opened
+  useEffect(() => {
+    if (activeTab === 'todaysOrders') {
+      fetchTodaysOrdersLayers();
+    }
+  }, [activeTab]);
+
+  const fetchTodaysOrdersLayers = async () => {
+    setLoadingTodaysOrdersLayers(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('user_data'));
+      if (!user?.employee_id) {
+        console.error('No employee ID found');
+        setTodaysOrdersLayers([]);
+        setLoadingTodaysOrdersLayers(false);
+        return;
+      }
+
+      const endpoint = `${API_BASE_URL}/todays-orders/layers/${user.employee_id}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+
+      if (data.success && data.layers) {
+        setTodaysOrdersLayers(data.layers);
+      } else {
+        console.warn('No layers found for today\'s orders');
+        setTodaysOrdersLayers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching today\'s orders layers:', error);
+      setTodaysOrdersLayers([]);
+    } finally {
+      setLoadingTodaysOrdersLayers(false);
+    }
+  };
+
+  // Fetch customers when layer is selected
+  const fetchTodaysOrdersCustomers = useCallback(async (layer) => {
+    if (!layer) {
+      setTodaysOrdersCustomers([]);
+      return;
+    }
+
+    setLoadingTodaysOrdersCustomers(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('user_data'));
+      if (!user?.employee_id) {
+        console.error('No employee ID found');
+        setTodaysOrdersCustomers([]);
+        setLoadingTodaysOrdersCustomers(false);
+        return;
+      }
+
+      const endpoint = `${API_BASE_URL}/todays-orders/customers/${user.employee_id}?layer=${encodeURIComponent(layer)}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+
+      if (data.success && data.customers) {
+        setTodaysOrdersCustomers(data.customers);
+      } else {
+        console.warn('No customers found for today\'s orders layer');
+        setTodaysOrdersCustomers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching today\'s orders customers:', error);
+      setTodaysOrdersCustomers([]);
+    } finally {
+      setLoadingTodaysOrdersCustomers(false);
+    }
+  }, []);
+
+  // When selectedTodaysOrdersLayer changes, fetch customers
+  useEffect(() => {
+    if (selectedTodaysOrdersLayer) {
+      fetchTodaysOrdersCustomers(selectedTodaysOrdersLayer);
+    } else {
+      setTodaysOrdersCustomers([]);
+    }
+  }, [selectedTodaysOrdersLayer, fetchTodaysOrdersCustomers]);
+
+  const handleTodaysOrdersCustomerClick = async (customer) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user_data'));
+      if (!user?.employee_id) {
+        console.error('No employee ID found');
+        return;
+      }
+
+      const endpoint = `${API_BASE_URL}/todays-orders/sku-details/${user.employee_id}/${customer.customerId}?layer=${encodeURIComponent(selectedTodaysOrdersLayer)}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+
+      if (data.success && data.skus) {
+        setTodaysOrdersSkus(data.skus);
+        setSelectedTodaysOrdersCustomer(customer);
+        setIsTodaysOrdersModalOpen(true);
+      } else {
+        console.warn('No SKU details found');
+        setTodaysOrdersSkus([]);
+      }
+    } catch (error) {
+      console.error('Error fetching today\'s orders SKU details:', error);
+      setTodaysOrdersSkus([]);
+    }
+  };
+
+  const handleCloseTodaysOrdersModal = () => {
+    setIsTodaysOrdersModalOpen(false);
+    setSelectedTodaysOrdersCustomer(null);
+    setTodaysOrdersSkus([]);
+  };
+
+  // ============================================================================
   // BASE TAB FUNCTIONS
   // ============================================================================
 
@@ -404,46 +531,60 @@ const Target = () => {
             </h1>
             <p className="text-gray-600">
               {activeTab === 'target' && `Target customers based on ${targetType} metrics`}
+              {activeTab === 'todaysOrders' && 'Today\'s orders by layer'}
               {activeTab === 'attention' && 'Customers requiring attention based on specific metrics'}
               {activeTab === 'base' && 'Base customers management'}
             </p>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('target')}
-              className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 ${
-                activeTab === 'target'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FaBullseye />
-              Target
-            </button>
-            <button
-              onClick={() => setActiveTab('attention')}
-              className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 ${
-                activeTab === 'attention'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FaExclamationCircle />
-              Attention
-            </button>
-            <button
-              onClick={() => setActiveTab('base')}
-              className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 ${
-                activeTab === 'base'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FaDatabase />
-              Base
-            </button>
+          {/* Tab Navigation - Horizontal Scrollable */}
+          <div className="mb-6 border-b border-gray-200 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex gap-2 min-w-max">
+              <button
+                onClick={() => setActiveTab('target')}
+                className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'target'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaBullseye />
+                Target
+              </button>
+              <button
+                onClick={() => setActiveTab('todaysOrders')}
+                className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'todaysOrders'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaShoppingCart />
+                Today's Orders
+              </button>
+              <button
+                onClick={() => setActiveTab('attention')}
+                className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'attention'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaExclamationCircle />
+                Attention
+              </button>
+              <button
+                onClick={() => setActiveTab('base')}
+                className={`px-6 py-3 font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'base'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FaDatabase />
+                Base
+              </button>
+            </div>
           </div>
 
           {/* Target Tab Controls */}
@@ -487,6 +628,22 @@ const Target = () => {
                 }}
                 placeholder="Choose Metric"
                 disabled={loadingMetrics}
+              />
+            </div>
+          )}
+
+          {/* Today's Orders Tab Controls */}
+          {activeTab === 'todaysOrders' && (
+            <div className="flex gap-4 items-center flex-wrap">
+              <CustomDropdown
+                options={todaysOrdersLayers.map(layer => ({
+                  value: layer,
+                  label: layer
+                }))}
+                value={selectedTodaysOrdersLayer}
+                onChange={(value) => setSelectedTodaysOrdersLayer(value)}
+                placeholder="Choose Layer"
+                disabled={loadingTodaysOrdersLayers}
               />
             </div>
           )}
@@ -740,6 +897,129 @@ const Target = () => {
           </div>
         )}
 
+        {/* TODAY'S ORDERS TAB CONTENT */}
+        {/* Empty State - No Layer Selected */}
+        {activeTab === 'todaysOrders' && !selectedTodaysOrdersLayer && (
+          <div className="animate-fade-in">
+            <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-dashed border-blue-300">
+              <FaShoppingCart className="text-6xl text-blue-300 mb-4 mx-auto" />
+              <p className="text-gray-700 text-lg font-semibold">Select a Layer to View Today's Orders</p>
+              <p className="text-sm text-gray-500 mt-2">Use the dropdown above to choose a layer</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {activeTab === 'todaysOrders' && selectedTodaysOrdersLayer && loadingTodaysOrdersCustomers && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
+                Today's Orders - {selectedTodaysOrdersLayer}
+              </h2>
+            </div>
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Customer List */}
+        {activeTab === 'todaysOrders' && selectedTodaysOrdersLayer && !loadingTodaysOrdersCustomers && todaysOrdersCustomers.length > 0 && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
+                Today's Orders - {selectedTodaysOrdersLayer}
+              </h2>
+              <p className="text-sm text-gray-600 mt-2">
+                Click "View Details" to see SKU information for each customer
+              </p>
+            </div>
+
+            <div className="card p-6">
+              <div className="max-h-[600px] overflow-y-auto pr-2 space-y-3">
+                {todaysOrdersCustomers.map((customer) => (
+                  <div
+                    key={customer.customerId}
+                    className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-400 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <FaUser className="text-blue-400 mr-2 text-sm" />
+                          <span className="font-semibold text-gray-900 text-lg">
+                            {customer.customerName}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          <div className="flex items-center text-gray-700">
+                            <span className="font-medium mr-2">Customer ID:</span>
+                            <span>{customer.customerId}</span>
+                          </div>
+                          <div className="flex items-center text-gray-700">
+                            <FaPhone className="mr-2 text-blue-400" />
+                            <span>{customer.contactNumber}</span>
+                          </div>
+                          {customer.orderTime && (
+                            <div className="flex items-center text-gray-700">
+                              <span className="font-medium mr-2">Order Time:</span>
+                              <span className="text-green-600 font-semibold">{customer.orderTime}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 ml-4">
+                        <a
+                          href={`tel:${customer.contactNumber}`}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-all transform hover:scale-105 flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FaPhone className="mr-2" />
+                          Call
+                        </a>
+                        <button
+                          onClick={() => handleTodaysOrdersCustomerClick(customer)}
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-all transform hover:scale-105"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                <p className="text-sm text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{todaysOrdersCustomers.length}</span> customers
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty Results State */}
+        {activeTab === 'todaysOrders' && selectedTodaysOrdersLayer && !loadingTodaysOrdersCustomers && todaysOrdersCustomers.length === 0 && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <span className="w-2 h-8 bg-blue-500 rounded-full mr-3"></span>
+                Today's Orders - {selectedTodaysOrdersLayer}
+              </h2>
+              <p className="text-sm text-gray-600 mt-2">
+                No customers found for this layer
+              </p>
+            </div>
+
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <FaShoppingCart className="text-6xl text-gray-300 mb-4 mx-auto" />
+              <p className="text-gray-600 text-lg">No customers found for this layer</p>
+            </div>
+          </div>
+        )}
+
         {/* BASE TAB CONTENT */}
         {activeTab === 'base' && (
           <div className="animate-fade-in">
@@ -874,6 +1154,14 @@ const Target = () => {
         isOpen={isBaseModalOpen}
         onClose={handleCloseBaseModal}
         customer={selectedBaseCustomer}
+      />
+
+      {/* Today's Orders SKU Modal (Today's Orders Tab) */}
+      <TodaysOrdersSKUModal
+        isOpen={isTodaysOrdersModalOpen}
+        onClose={handleCloseTodaysOrdersModal}
+        customer={selectedTodaysOrdersCustomer}
+        skus={todaysOrdersSkus}
       />
     </>
   );
