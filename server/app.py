@@ -879,7 +879,7 @@ def get_nudge_zone_customers(employee_id):
             SELECT *
             FROM SA_HomePageTargetCustomers
             WHERE employee_id = %s
-            ORDER BY customer_id
+            ORDER BY LastOrder ASC
         """
 
         cursor.execute(query, (employee_id,))
@@ -929,7 +929,7 @@ def get_so_close_customers(employee_id):
             SELECT *
             FROM SA_HomePageAppFunnelCustomers
             WHERE employee_id = %s
-            ORDER BY customer_id
+            ORDER BY LastOpened ASC
         """
 
         cursor.execute(query, (employee_id,))
